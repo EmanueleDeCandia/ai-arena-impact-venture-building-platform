@@ -25,6 +25,7 @@ import {
   Target,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import {
   ATTUATOR_TYPE_LABELS,
@@ -41,14 +42,16 @@ import {
   ImpactClassification,
   ImpactDimensionKey,
   ImpactItem,
+  ImpactRowData,
   TARGET_SUPPORTER_LABELS,
   TargetSupporterType,
   cloneAssessment,
+  createDefaultRowForCategory,
 } from "@/lib/imp-framework";
 import { Badge, Card, Modal, SectionTitle } from "@/components/ui";
 import { cn } from "@/lib/format";
 
-const STORAGE_KEY = "arena_impact_assessments_v1";
+const STORAGE_KEY = "arena_impact_assessments_v2";
 
 const DIMENSION_COLORS: Record<ImpactDimensionKey, { bg: string; text: string; border: string; badge: string }> = {
   WHAT: { bg: "bg-emerald-50/70", text: "text-emerald-900", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },
@@ -175,7 +178,8 @@ export function ImpactAssessmentPanel() {
           title: `Impatto ${idx + 1}: Obiettivo Specifico`,
           description: "Descrizione dell'esito per i beneficiari.",
           classification: "BENEFIT_STAKEHOLDERS",
-          rows: IMP_CATEGORIES.map((c) => ({
+          rows: IMP_CATEGORIES.map((c, cIdx) => ({
+            rowId: `row-${newId}-${c.id}-${cIdx}`,
             categoryId: c.id,
             indicator: "",
             data: "",
@@ -248,7 +252,8 @@ export function ImpactAssessmentPanel() {
       title: `Impatto ${nextNumber}: Nuovo Obiettivo di Impatto Sociale / Ambientale`,
       description: "Descrivere l'esito generato per i beneficiari, il problema sociale affrontato e la modalità di intervento.",
       classification: "BENEFIT_STAKEHOLDERS",
-      rows: IMP_CATEGORIES.map((cat) => ({
+      rows: IMP_CATEGORIES.map((cat, idx) => ({
+        rowId: `row-${Date.now()}-${cat.id}-${idx}`,
         categoryId: cat.id,
         indicator: "",
         data: "",
@@ -278,15 +283,41 @@ export function ImpactAssessmentPanel() {
     }
   };
 
-  // Update row in current impact
-  const handleUpdateRow = (
-    categoryId: number,
+  // MULTI-ROW ADDITION: Add extra row to a specific category
+  const handleAddRowToCategory = (cat: ImpactCategoryDef, customRiskType?: string) => {
+    const newRow = createDefaultRowForCategory(cat, customRiskType);
+    const nextImpacts = [...impacts];
+    const imp = { ...nextImpacts[activeImpactIndex] };
+    imp.rows = [...imp.rows, newRow];
+    nextImpacts[activeImpactIndex] = imp;
+    updateCurrentImpacts(nextImpacts);
+    triggerNotification(`Nuova riga aggiunta per "${cat.name.split("(")[0]}"`);
+  };
+
+  // MULTI-ROW REMOVAL: Remove a specific row by its rowId
+  const handleRemoveRowByRowId = (rowId: string, categoryId: number) => {
+    const categoryRows = currentImpact.rows.filter((r) => r.categoryId === categoryId);
+    if (categoryRows.length <= 1) {
+      alert("È necessario mantenere almeno una riga di dati per questa categoria.");
+      return;
+    }
+    const nextImpacts = [...impacts];
+    const imp = { ...nextImpacts[activeImpactIndex] };
+    imp.rows = imp.rows.filter((r) => r.rowId !== rowId);
+    nextImpacts[activeImpactIndex] = imp;
+    updateCurrentImpacts(nextImpacts);
+    triggerNotification("Riga rimossa.");
+  };
+
+  // MULTI-ROW UPDATE: Update a specific row by its rowId
+  const handleUpdateRowByRowId = (
+    rowId: string,
     field: "indicator" | "data" | "source" | "sourceType" | "assessment" | "target",
     value: string
   ) => {
     const nextImpacts = [...impacts];
     const imp = { ...nextImpacts[activeImpactIndex] };
-    imp.rows = imp.rows.map((r) => (r.categoryId === categoryId ? { ...r, [field]: value } : r));
+    imp.rows = imp.rows.map((r) => (r.rowId === rowId ? { ...r, [field]: value } : r));
     nextImpacts[activeImpactIndex] = imp;
     updateCurrentImpacts(nextImpacts);
   };
@@ -348,8 +379,8 @@ export function ImpactAssessmentPanel() {
 
   // Metrics for active assessment
   const filledRowsCount = currentImpact?.rows.filter((r) => r.indicator.trim() !== "" && r.data.trim() !== "").length ?? 0;
-  const totalRowsCount = IMP_CATEGORIES.length;
-  const completionPercentage = Math.round((filledRowsCount / totalRowsCount) * 100);
+  const totalRowsCount = currentImpact?.rows.length || IMP_CATEGORIES.length;
+  const completionPercentage = Math.round((filledRowsCount / Math.max(1, totalRowsCount)) * 100);
 
   return (
     <div className="space-y-6">
@@ -510,12 +541,10 @@ export function ImpactAssessmentPanel() {
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-            <div className="text-[11px] font-medium text-slate-400">Completezza Matrice Attuale</div>
+            <div className="text-[11px] font-medium text-slate-400">Righe Dati &amp; Metriche Totali</div>
             <div className="mt-1 flex items-center gap-2">
-              <span className="text-lg font-bold text-sky-400">{completionPercentage}%</span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
-                <div className="h-full rounded-full bg-sky-400" style={{ width: `${completionPercentage}%` }} />
-              </div>
+              <span className="text-lg font-bold text-sky-400">{currentImpact?.rows.length || 0}</span>
+              <span className="text-xs text-slate-400">indicatori attivi</span>
             </div>
           </div>
 
@@ -642,7 +671,7 @@ export function ImpactAssessmentPanel() {
                       SCHEDA OPERATIVA {activeImpactIndex + 1} DI {impacts.length}
                     </span>
                     <span className="text-xs text-slate-500">
-                      Compilazione delle 4 colonne raccomandate dall&apos;IMP (+ Target)
+                      Compilazione flessibile multi-riga per ciascuna delle 15 categorie IMP (+ Target)
                     </span>
                   </div>
                   <input
@@ -725,10 +754,10 @@ export function ImpactAssessmentPanel() {
                         <thead>
                           <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600">
                             <th className="w-1/4 px-4 py-3 font-bold uppercase tracking-wider">
-                              Categoria Dati (IMP) &amp; Guida
+                              Categoria Dati (IMP) &amp; Azioni
                             </th>
                             <th className="w-1/5 px-4 py-3 font-bold uppercase tracking-wider">
-                              1. Indicatore (Indicator)
+                              1. Indicatore / Tipologia
                             </th>
                             <th className="w-1/5 px-4 py-3 font-bold uppercase tracking-wider">
                               2. Dati Rilevati (Data)
@@ -740,54 +769,135 @@ export function ImpactAssessmentPanel() {
                               4. Valutazione (Assessment)
                             </th>
                             <th className="w-28 px-4 py-3 font-bold uppercase tracking-wider">
-                              Target (Opzionale)
+                              Target / Presidio
                             </th>
+                            <th className="w-8 px-2 py-3"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-200">
                           {dim.categories.map((cat) => {
-                            const row = currentImpact.rows.find((r) => r.categoryId === cat.id) || {
-                              categoryId: cat.id,
-                              indicator: "",
-                              data: "",
-                              source: "",
-                              sourceType: "SELF_REPORTED" as const,
-                              assessment: "",
-                              target: "",
-                            };
+                            // Find all rows for this category
+                            const categoryRows = currentImpact.rows.filter((r) => r.categoryId === cat.id);
+                            const activeRows: ImpactRowData[] =
+                              categoryRows.length > 0
+                                ? categoryRows
+                                : [
+                                    {
+                                      rowId: `row-${cat.id}-fallback`,
+                                      categoryId: cat.id,
+                                      indicator: cat.defaultIndicator,
+                                      data: cat.defaultData,
+                                      source: cat.defaultSource,
+                                      sourceType: "SELF_REPORTED",
+                                      assessment: cat.defaultAssessment,
+                                      target: cat.defaultTarget,
+                                    },
+                                  ];
 
-                            return (
-                              <tr key={cat.id} className="hover:bg-slate-50/80 transition">
-                                {/* Category Name, Definition, Ref */}
+                            return activeRows.map((row, rowIdx) => (
+                              <tr
+                                key={row.rowId}
+                                className={cn(
+                                  "hover:bg-slate-50/90 transition",
+                                  rowIdx > 0 ? "bg-slate-50/40" : "bg-white"
+                                )}
+                              >
+                                {/* Category Header (shown on first row or with badge on sub-rows) */}
                                 <td className="p-4 align-top">
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="font-bold text-slate-900">{cat.id}. {cat.name}</span>
-                                      {cat.ref && (
-                                        <span className="rounded bg-slate-200 px-1 py-0.2 text-[10px] font-bold text-slate-700">
-                                          ({cat.ref})
+                                  {rowIdx === 0 ? (
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="font-bold text-slate-900">{cat.id}. {cat.name}</span>
+                                        {cat.ref && (
+                                          <span className="rounded bg-slate-200 px-1 py-0.2 text-[10px] font-bold text-slate-700">
+                                            ({cat.ref})
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-[11px] italic text-slate-500 font-medium">
+                                        IMP: {cat.originalName}
+                                      </div>
+                                      <p className="text-[11px] leading-relaxed text-slate-600">
+                                        {cat.definition}
+                                      </p>
+                                      <div className="rounded bg-slate-100 p-1.5 text-[10px] text-slate-600">
+                                        💡 <strong>Guida:</strong> {cat.operationalGuidance}
+                                      </div>
+
+                                      {/* Add Row Button */}
+                                      <div className="pt-2">
+                                        {cat.id === 14 ? (
+                                          <div className="space-y-1">
+                                            <button
+                                              onClick={() => handleAddRowToCategory(cat)}
+                                              className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-800 hover:bg-rose-100"
+                                            >
+                                              <Plus className="h-3 w-3" />
+                                              Aggiungi Rischio IMP ({activeRows.length} attivi)
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <button
+                                            onClick={() => handleAddRowToCategory(cat)}
+                                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                                          >
+                                            <Plus className="h-3 w-3" />
+                                            Aggiungi Indicatore / Riga ({activeRows.length})
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-1 pl-2 border-l-2 border-slate-300">
+                                      <span className="inline-flex items-center gap-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                                        ↳ Riga {rowIdx + 1} aggiuntiva ({cat.name.split("(")[0]})
+                                      </span>
+                                      {cat.id === 14 && (
+                                        <span className="block text-[10px] text-rose-700 font-medium">
+                                          Specifica ulteriore tipologia tra i 9 rischi IMP
                                         </span>
                                       )}
                                     </div>
-                                    <div className="text-[11px] italic text-slate-500 font-medium">
-                                      IMP: {cat.originalName}
-                                    </div>
-                                    <p className="text-[11px] leading-relaxed text-slate-600">
-                                      {cat.definition}
-                                    </p>
-                                    <div className="rounded bg-slate-100 p-1.5 text-[10px] text-slate-600">
-                                      💡 <strong>Guida:</strong> {cat.operationalGuidance}
-                                    </div>
-                                  </div>
+                                  )}
                                 </td>
 
-                                {/* 1. Indicator */}
-                                <td className="p-4 align-top">
+                                {/* 1. Indicator / Risk Selector */}
+                                <td className="p-4 align-top space-y-2">
+                                  {cat.id === 14 && (
+                                    <div>
+                                      <span className="block text-[10px] font-bold text-rose-900 mb-1">
+                                        Seleziona tra i 9 Rischi IMP:
+                                      </span>
+                                      <select
+                                        value={
+                                          IMP_RISK_TYPES.some((rt) => row.indicator.includes(rt.value))
+                                            ? IMP_RISK_TYPES.find((rt) => row.indicator.includes(rt.value))?.value
+                                            : ""
+                                        }
+                                        onChange={(e) => {
+                                          const selectedType = IMP_RISK_TYPES.find((rt) => rt.value === e.target.value);
+                                          if (selectedType) {
+                                            handleUpdateRowByRowId(row.rowId, "indicator", `${selectedType.label}`);
+                                            handleUpdateRowByRowId(row.rowId, "data", `Presidio: ${selectedType.desc}`);
+                                          }
+                                        }}
+                                        className="w-full rounded-lg border border-rose-300 bg-rose-50/60 p-1.5 text-[11px] font-bold text-rose-950 focus:border-rose-500 focus:ring-1 focus:ring-rose-200"
+                                      >
+                                        <option value="">-- Seleziona Rischio Codificato --</option>
+                                        {IMP_RISK_TYPES.map((rt) => (
+                                          <option key={rt.value} value={rt.value}>
+                                            {rt.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+
                                   <textarea
-                                    rows={3}
+                                    rows={2}
                                     value={row.indicator}
-                                    onChange={(e) => handleUpdateRow(cat.id, "indicator", e.target.value)}
-                                    placeholder="Es. % miglioramento reddito..."
+                                    onChange={(e) => handleUpdateRowByRowId(row.rowId, "indicator", e.target.value)}
+                                    placeholder={cat.id === 14 ? "Dettaglio del rischio..." : "Es. % miglioramento reddito..."}
                                     className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
                                   />
                                 </td>
@@ -797,7 +907,7 @@ export function ImpactAssessmentPanel() {
                                   <textarea
                                     rows={3}
                                     value={row.data}
-                                    onChange={(e) => handleUpdateRow(cat.id, "data", e.target.value)}
+                                    onChange={(e) => handleUpdateRowByRowId(row.rowId, "data", e.target.value)}
                                     placeholder="Es. +35% occupati a 6 mesi..."
                                     className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
                                   />
@@ -808,13 +918,13 @@ export function ImpactAssessmentPanel() {
                                   <input
                                     type="text"
                                     value={row.source}
-                                    onChange={(e) => handleUpdateRow(cat.id, "source", e.target.value)}
+                                    onChange={(e) => handleUpdateRowByRowId(row.rowId, "source", e.target.value)}
                                     placeholder="Es. Survey beneficiari Q2 / DB"
                                     className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
                                   />
                                   <select
                                     value={row.sourceType}
-                                    onChange={(e) => handleUpdateRow(cat.id, "sourceType", e.target.value)}
+                                    onChange={(e) => handleUpdateRowByRowId(row.rowId, "sourceType", e.target.value as any)}
                                     className="w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
                                   >
                                     <option value="SELF_REPORTED">Self-Reported (Survey diretta)</option>
@@ -828,7 +938,7 @@ export function ImpactAssessmentPanel() {
                                   {cat.assessmentOptions ? (
                                     <select
                                       value={row.assessment}
-                                      onChange={(e) => handleUpdateRow(cat.id, "assessment", e.target.value)}
+                                      onChange={(e) => handleUpdateRowByRowId(row.rowId, "assessment", e.target.value)}
                                       className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs font-bold text-slate-800 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
                                     >
                                       {cat.assessmentOptions.map((opt) => (
@@ -841,42 +951,38 @@ export function ImpactAssessmentPanel() {
                                     <textarea
                                       rows={3}
                                       value={row.assessment}
-                                      onChange={(e) => handleUpdateRow(cat.id, "assessment", e.target.value)}
+                                      onChange={(e) => handleUpdateRowByRowId(row.rowId, "assessment", e.target.value)}
                                       placeholder="Valutazione qualitativa..."
                                       className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
                                     />
                                   )}
-
-                                  {cat.id === 14 && (
-                                    <div className="mt-1">
-                                      <span className="block text-[10px] font-bold text-slate-500">Tipologia Rischio IMP:</span>
-                                      <select
-                                        onChange={(e) => handleUpdateRow(cat.id, "indicator", e.target.value)}
-                                        className="mt-1 w-full rounded border border-slate-200 bg-slate-50 p-1 text-[10px]"
-                                      >
-                                        <option value="">Seleziona dai 9 rischi IMP...</option>
-                                        {IMP_RISK_TYPES.map((rt) => (
-                                          <option key={rt.value} value={rt.value}>
-                                            {rt.label}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                  )}
                                 </td>
 
-                                {/* Target */}
+                                {/* Target / Presidio */}
                                 <td className="p-4 align-top">
                                   <input
                                     type="text"
                                     value={row.target ?? ""}
-                                    onChange={(e) => handleUpdateRow(cat.id, "target", e.target.value)}
-                                    placeholder="Es. > 80%"
+                                    onChange={(e) => handleUpdateRowByRowId(row.rowId, "target", e.target.value)}
+                                    placeholder="Es. > 80% / Mitigazione..."
                                     className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
                                   />
                                 </td>
+
+                                {/* Delete Sub-row button (if > 1 rows for this category) */}
+                                <td className="p-4 align-top text-right">
+                                  {activeRows.length > 1 && (
+                                    <button
+                                      onClick={() => handleRemoveRowByRowId(row.rowId, cat.id)}
+                                      title="Elimina questa riga aggiuntiva"
+                                      className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </td>
                               </tr>
-                            );
+                            ));
                           })}
                         </tbody>
                       </table>
@@ -891,7 +997,7 @@ export function ImpactAssessmentPanel() {
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              <span>Assessment salvato con persistenza locale e sincronizzazione per il Sostenitore.</span>
+              <span>Tutte le righe e i rischi aggiunti vengono salvati e tracciati nello score per il Sostenitore.</span>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -1256,99 +1362,103 @@ export function ImpactAssessmentPanel() {
             </div>
           </Card>
 
-          {/* Breakdown per Impact Table */}
+          {/* Breakdown per Impact Table with all rows */}
           <div className="space-y-4">
             <h3 className="text-base font-bold text-slate-900">
               Quadro Sinottico delle 5 Dimensioni per Ciascun Impatto ({impacts.length} Obiettivi)
             </h3>
 
-            {impacts.map((imp, idx) => (
-              <Card key={imp.id} className="p-5 border-slate-200 space-y-4">
-                <div className="flex flex-col justify-between gap-2 border-b border-slate-100 pb-3 md:flex-row md:items-center">
-                  <div>
-                    <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-800">
-                      IMPATTO {idx + 1}
+            {impacts.map((imp, idx) => {
+              const whatRows = imp.rows.filter((r) => r.categoryId >= 1 && r.categoryId <= 4);
+              const whoRows = imp.rows.filter((r) => r.categoryId >= 5 && r.categoryId <= 8);
+              const howMuchRows = imp.rows.filter((r) => r.categoryId >= 9 && r.categoryId <= 11);
+              const contributionRows = imp.rows.filter((r) => r.categoryId >= 12 && r.categoryId <= 13);
+              const riskRows = imp.rows.filter((r) => r.categoryId >= 14 && r.categoryId <= 15);
+
+              return (
+                <Card key={imp.id} className="p-5 border-slate-200 space-y-4">
+                  <div className="flex flex-col justify-between gap-2 border-b border-slate-100 pb-3 md:flex-row md:items-center">
+                    <div>
+                      <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-800">
+                        IMPATTO {idx + 1}
+                      </span>
+                      <h4 className="mt-1 text-base font-bold text-slate-900">{imp.title}</h4>
+                      <p className="text-xs text-slate-600">{imp.description}</p>
+                    </div>
+
+                    <span className={cn("self-start rounded-md border px-3 py-1 text-xs font-bold md:self-auto", CLASSIFICATION_INFO[imp.classification].badgeCls)}>
+                      Classe {CLASSIFICATION_INFO[imp.classification].code}: {CLASSIFICATION_INFO[imp.classification].label}
                     </span>
-                    <h4 className="mt-1 text-base font-bold text-slate-900">{imp.title}</h4>
-                    <p className="text-xs text-slate-600">{imp.description}</p>
                   </div>
 
-                  <span className={cn("self-start rounded-md border px-3 py-1 text-xs font-bold md:self-auto", CLASSIFICATION_INFO[imp.classification].badgeCls)}>
-                    Classe {CLASSIFICATION_INFO[imp.classification].code}: {CLASSIFICATION_INFO[imp.classification].label}
-                  </span>
-                </div>
+                  {/* 5 Dimension Pillars Grid showing all rows */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-5 text-xs">
+                    {/* WHAT */}
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 space-y-2">
+                      <span className="font-bold text-emerald-900 block">1. WHAT ({whatRows.length} metriche)</span>
+                      {whatRows.map((r) => (
+                        <div key={r.rowId} className="border-b border-emerald-200/60 pb-1.5 last:border-0 last:pb-0">
+                          <div className="text-[11px] font-semibold text-slate-800">{r.indicator || "Esito"}</div>
+                          <div className="text-[10px] text-slate-600">{r.data || "—"}</div>
+                          {r.assessment && <Badge className="bg-emerald-100 text-emerald-800 mt-1 text-[10px]">{r.assessment}</Badge>}
+                        </div>
+                      ))}
+                    </div>
 
-                {/* 5 Dimension Pillars Grid */}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-5 text-xs">
-                  {/* WHAT */}
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 space-y-1">
-                    <span className="font-bold text-emerald-900 block">1. WHAT</span>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>Esito:</strong> {imp.rows.find((r) => r.categoryId === 1)?.data || "—"}
+                    {/* WHO */}
+                    <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
+                      <span className="font-bold text-blue-900 block">2. WHO ({whoRows.length} segmenti)</span>
+                      {whoRows.map((r) => (
+                        <div key={r.rowId} className="border-b border-blue-200/60 pb-1.5 last:border-0 last:pb-0">
+                          <div className="text-[11px] font-semibold text-slate-800">{r.indicator || "Target"}</div>
+                          <div className="text-[10px] text-slate-600">{r.data || "—"}</div>
+                          {r.assessment && <Badge className="bg-blue-100 text-blue-800 mt-1 text-[10px]">{r.assessment}</Badge>}
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>SDG:</strong> {imp.rows.find((r) => r.categoryId === 4)?.indicator || "—"}
-                    </div>
-                    <Badge className="bg-emerald-100 text-emerald-800 mt-1">
-                      {imp.rows.find((r) => r.categoryId === 1)?.assessment || "Positive"}
-                    </Badge>
-                  </div>
 
-                  {/* WHO */}
-                  <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-1">
-                    <span className="font-bold text-blue-900 block">2. WHO</span>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>Target:</strong> {imp.rows.find((r) => r.categoryId === 5)?.data || "—"}
+                    {/* HOW MUCH */}
+                    <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-3 space-y-2">
+                      <span className="font-bold text-purple-900 block">3. HOW MUCH ({howMuchRows.length} parametri)</span>
+                      {howMuchRows.map((r) => (
+                        <div key={r.rowId} className="border-b border-purple-200/60 pb-1.5 last:border-0 last:pb-0">
+                          <div className="text-[11px] font-semibold text-slate-800">{r.indicator || "Scala/Profondità"}</div>
+                          <div className="text-[10px] text-slate-600">{r.data || "—"}</div>
+                          {r.assessment && <Badge className="bg-purple-100 text-purple-800 mt-1 text-[10px]">{r.assessment}</Badge>}
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>Baseline:</strong> {imp.rows.find((r) => r.categoryId === 7)?.data || "—"}
-                    </div>
-                    <Badge className="bg-blue-100 text-blue-800 mt-1">
-                      {imp.rows.find((r) => r.categoryId === 7)?.assessment || "Underserved"}
-                    </Badge>
-                  </div>
 
-                  {/* HOW MUCH */}
-                  <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-3 space-y-1">
-                    <span className="font-bold text-purple-900 block">3. HOW MUCH</span>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>Scala:</strong> {imp.rows.find((r) => r.categoryId === 9)?.data || "—"}
+                    {/* CONTRIBUTION */}
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 space-y-2">
+                      <span className="font-bold text-amber-900 block">4. CONTRIBUTION ({contributionRows.length} controfattuali)</span>
+                      {contributionRows.map((r) => (
+                        <div key={r.rowId} className="border-b border-amber-200/60 pb-1.5 last:border-0 last:pb-0">
+                          <div className="text-[11px] font-semibold text-slate-800">{r.indicator || "Addizionalità"}</div>
+                          <div className="text-[10px] text-slate-600">{r.data || "—"}</div>
+                          {r.assessment && <Badge className="bg-amber-100 text-amber-800 mt-1 text-[10px]">{r.assessment}</Badge>}
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>Profondità:</strong> {imp.rows.find((r) => r.categoryId === 10)?.data || "—"}
-                    </div>
-                    <Badge className="bg-purple-100 text-purple-800 mt-1">
-                      {imp.rows.find((r) => r.categoryId === 10)?.assessment || "Deep change"}
-                    </Badge>
-                  </div>
 
-                  {/* CONTRIBUTION */}
-                  <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 space-y-1">
-                    <span className="font-bold text-amber-900 block">4. CONTRIBUTION</span>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>Addizionalità:</strong> {imp.rows.find((r) => r.categoryId === 12)?.data || "—"}
+                    {/* RISK */}
+                    <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-3 space-y-2">
+                      <span className="font-bold text-rose-900 block">5. RISK ({riskRows.length} rischi presidiati)</span>
+                      {riskRows.map((r) => (
+                        <div key={r.rowId} className="border-b border-rose-200/60 pb-1.5 last:border-0 last:pb-0">
+                          <div className="text-[11px] font-semibold text-rose-950 truncate">{r.indicator || "Rischio"}</div>
+                          <div className="text-[10px] text-slate-600">{r.data || "—"}</div>
+                          <div className="flex items-center gap-1 mt-1">
+                            {r.assessment && <Badge className="bg-rose-100 text-rose-800 text-[10px]">{r.assessment}</Badge>}
+                            {r.target && <span className="text-[9px] text-slate-500 truncate">🛡️ {r.target}</span>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <Badge className="bg-amber-100 text-amber-800 mt-1">
-                      {imp.rows.find((r) => r.categoryId === 12)?.assessment || "Likely better"}
-                    </Badge>
                   </div>
-
-                  {/* RISK */}
-                  <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-3 space-y-1">
-                    <span className="font-bold text-rose-900 block">5. RISK</span>
-                    <div className="text-[11px] text-slate-700 truncate">
-                      <strong>Rischio:</strong> {imp.rows.find((r) => r.categoryId === 14)?.indicator || "Execution"}
-                    </div>
-                    <div className="text-[11px] text-slate-700">
-                      <strong>Mitigazione:</strong> {imp.rows.find((r) => r.categoryId === 14)?.target || "Presidio attivo"}
-                    </div>
-                    <Badge className="bg-rose-100 text-rose-800 mt-1">
-                      {imp.rows.find((r) => r.categoryId === 14)?.assessment || "Low risk"}
-                    </Badge>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
 
           {/* Sostenitore Recommendation Card */}
@@ -1358,8 +1468,7 @@ export function ImpactAssessmentPanel() {
               <h4 className="text-base font-bold">Parere Conclusivo per {TARGET_SUPPORTER_LABELS[profile.targetSupporter]}</h4>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              La proposta di impatto presentata da <strong>{profile.name}</strong> soddisfa tutti i requisiti di tracciabilità metodologica IMP.
-              L&apos;alto livello di addizionalità rilevato rispetto al controfattuale territoriale (Dimensione Contribution) unito al presidio dei rischi operativi e di drop-off rende l&apos;iniziativa idonea per:
+              La proposta di impatto presentata da <strong>{profile.name}</strong> soddisfa tutti i requisiti di tracciabilità metodologica IMP con analisi multi-fattoriale e presidio dei rischi dichiarati.
             </p>
             <div className="grid gap-3 sm:grid-cols-3 text-xs">
               <div className="rounded-lg bg-slate-800/80 p-3 border border-slate-700">
@@ -1414,7 +1523,7 @@ export function ImpactAssessmentPanel() {
                   />
                   <div>
                     <div>Clona Matrice Corrente</div>
-                    <div className="text-[11px] font-normal text-slate-500">Copia tutti gli impatti e dati dell&apos;assessment attivo</div>
+                    <div className="text-[11px] font-normal text-slate-500">Copia tutti gli impatti, righe e dati dell&apos;assessment attivo</div>
                   </div>
                 </label>
 

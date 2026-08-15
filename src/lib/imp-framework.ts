@@ -21,6 +21,7 @@ export interface ImpactCategoryDef {
 }
 
 export interface ImpactRowData {
+  rowId: string;
   categoryId: number;
   indicator: string;
   data: string;
@@ -28,6 +29,19 @@ export interface ImpactRowData {
   sourceType: "SELF_REPORTED" | "NON_SELF_REPORTED" | "MIXED";
   assessment: string;
   target?: string;
+}
+
+export function createDefaultRowForCategory(cat: ImpactCategoryDef, customRiskType?: string): ImpactRowData {
+  return {
+    rowId: `row-${cat.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    categoryId: cat.id,
+    indicator: customRiskType ? customRiskType : cat.defaultIndicator,
+    data: cat.defaultData,
+    source: cat.defaultSource,
+    sourceType: "SELF_REPORTED",
+    assessment: cat.assessmentOptions ? cat.assessmentOptions[0].value : "",
+    target: cat.defaultTarget ?? "",
+  };
 }
 
 export interface ImpactItem {
@@ -396,7 +410,8 @@ export const INITIAL_DEFAULT_IMPACTS: ImpactItem[] = [
     title: "Impatto 1: Inserimento Lavorativo Stabile e Upskilling Digitale",
     description: "Percorso integrato di formazione professionale avanzata e collocamento a tempo indeterminato per giovani NEET e disoccupati fragili.",
     classification: "CONTRIBUTE_TO_SOLUTIONS",
-    rows: IMP_CATEGORIES.map((cat) => ({
+    rows: IMP_CATEGORIES.map((cat, idx) => ({
+      rowId: `row-imp1-${cat.id}-${idx}`,
       categoryId: cat.id,
       indicator: cat.defaultIndicator,
       data: cat.defaultData,
@@ -411,7 +426,7 @@ export const INITIAL_DEFAULT_IMPACTS: ImpactItem[] = [
     title: "Impatto 2: Riduzione Dispersione Scolastica e Supporto Educativo",
     description: "Intervento territoriale di contrasto alla povertà educativa minorile con laboratori STEM e supporto pomeridiano alle famiglie a basso reddito.",
     classification: "BENEFIT_STAKEHOLDERS",
-    rows: IMP_CATEGORIES.map((cat) => {
+    rows: IMP_CATEGORIES.map((cat, idx) => {
       let customData = cat.defaultData;
       let customIndicator = cat.defaultIndicator;
       let customAssessment = cat.defaultAssessment;
@@ -436,6 +451,7 @@ export const INITIAL_DEFAULT_IMPACTS: ImpactItem[] = [
         customAssessment = "Low risk";
       }
       return {
+        rowId: `row-imp2-${cat.id}-${idx}`,
         categoryId: cat.id,
         indicator: customIndicator,
         data: customData,
@@ -501,7 +517,8 @@ export const INITIAL_DEFAULT_ASSESSMENTS: AssessmentEntity[] = [
         title: "Impatto 1: Recupero Suolo & Rigenerazione Ambientale Sostenibile",
         description: "Bonifica e coltivazione agro-ecologica su 25 ettari con azzeramento pesticidi e ripristino biodiversità.",
         classification: "CONTRIBUTE_TO_SOLUTIONS",
-        rows: IMP_CATEGORIES.map((cat) => ({
+        rows: IMP_CATEGORIES.map((cat, idx) => ({
+          rowId: `row-ass2-1-${cat.id}-${idx}`,
           categoryId: cat.id,
           indicator: cat.id === 1 ? "Ettari bonificati & kg CO2 equivalente assorbita" : cat.defaultIndicator,
           data: cat.id === 1 ? "25 ettari convertiti a bio; -140 ton CO2eq/anno" : cat.defaultData,
@@ -516,7 +533,8 @@ export const INITIAL_DEFAULT_ASSESSMENTS: AssessmentEntity[] = [
         title: "Impatto 2: Benessere Psico-Sociale & Inclusione Soggetti Fragili",
         description: "Percorsi di ortoterapia e inserimento lavorativo stabile per 30 persone con disabilità.",
         classification: "BENEFIT_STAKEHOLDERS",
-        rows: IMP_CATEGORIES.map((cat) => ({
+        rows: IMP_CATEGORIES.map((cat, idx) => ({
+          rowId: `row-ass2-2-${cat.id}-${idx}`,
           categoryId: cat.id,
           indicator: cat.id === 1 ? "Scala WHO-5 di benessere mentale e autonomia" : cat.defaultIndicator,
           data: cat.id === 1 ? "+48% incremento score benessere percepito" : cat.defaultData,
@@ -547,7 +565,10 @@ export function cloneAssessment(
     title: imp.title,
     description: imp.description,
     classification: imp.classification,
-    rows: imp.rows.map((r) => ({ ...r })),
+    rows: imp.rows.map((r, rIdx) => ({
+      ...r,
+      rowId: `row-${newId}-${r.categoryId}-${rIdx}-${Date.now()}`,
+    })),
   }));
 
   const clonedProfile: AttuatorProfile = {
