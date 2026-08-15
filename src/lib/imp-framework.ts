@@ -457,3 +457,115 @@ export const INITIAL_DEFAULT_PROFILE: AttuatorProfile = {
   territory: "Puglia e Mezzogiorno (Città Metropolitana di Bari)",
   overallClassification: "CONTRIBUTE_TO_SOLUTIONS",
 };
+
+export interface AssessmentEntity {
+  id: string;
+  code: string;
+  assessmentTitle: string;
+  createdAt: string;
+  updatedAt: string;
+  profile: AttuatorProfile;
+  impacts: ImpactItem[];
+  notes?: string;
+}
+
+export const INITIAL_DEFAULT_ASSESSMENTS: AssessmentEntity[] = [
+  {
+    id: "ass-1",
+    code: "ASS-001",
+    assessmentTitle: "Valutazione Impatto 2026 · Hub Digitale & Inclusione Lavorativa",
+    createdAt: "2026-08-15T10:00:00Z",
+    updatedAt: "2026-08-15T15:30:00Z",
+    profile: INITIAL_DEFAULT_PROFILE,
+    impacts: INITIAL_DEFAULT_IMPACTS,
+    notes: "Proposta presentata per il programma di Co-progettazione Territoriale e Social Impact Bond con la PA.",
+  },
+  {
+    id: "ass-2",
+    code: "ASS-002",
+    assessmentTitle: "Qualificazione ESG · Bio-Agricoltura Sociale & Inserimento Terapeutico",
+    createdAt: "2026-08-10T09:00:00Z",
+    updatedAt: "2026-08-14T18:00:00Z",
+    profile: {
+      name: "Cooperativa Agricola Sociale Terra Viva ETS",
+      type: "COOPERATIVA_SOCIALE",
+      sector: "Agricoltura Sociale, Tutela della Biodiversità & Inserimento Lavorativo Protetto",
+      targetSupporter: "IMPACT_INVESTOR",
+      mission: "Rigenerare terreni agricoli confiscati e abbandonati per produrre cibo biologico a km 0 creando opportunità terapeutiche e occupazionali per persone con disabilità psichica.",
+      territory: "Lazio e Provincia di Viterbo",
+      overallClassification: "CONTRIBUTE_TO_SOLUTIONS",
+    },
+    impacts: [
+      {
+        id: "imp-2-1",
+        title: "Impatto 1: Recupero Suolo & Rigenerazione Ambientale Sostenibile",
+        description: "Bonifica e coltivazione agro-ecologica su 25 ettari con azzeramento pesticidi e ripristino biodiversità.",
+        classification: "CONTRIBUTE_TO_SOLUTIONS",
+        rows: IMP_CATEGORIES.map((cat) => ({
+          categoryId: cat.id,
+          indicator: cat.id === 1 ? "Ettari bonificati & kg CO2 equivalente assorbita" : cat.defaultIndicator,
+          data: cat.id === 1 ? "25 ettari convertiti a bio; -140 ton CO2eq/anno" : cat.defaultData,
+          source: cat.defaultSource,
+          sourceType: "NON_SELF_REPORTED",
+          assessment: cat.defaultAssessment,
+          target: cat.defaultTarget,
+        })),
+      },
+      {
+        id: "imp-2-2",
+        title: "Impatto 2: Benessere Psico-Sociale & Inclusione Soggetti Fragili",
+        description: "Percorsi di ortoterapia e inserimento lavorativo stabile per 30 persone con disabilità.",
+        classification: "BENEFIT_STAKEHOLDERS",
+        rows: IMP_CATEGORIES.map((cat) => ({
+          categoryId: cat.id,
+          indicator: cat.id === 1 ? "Scala WHO-5 di benessere mentale e autonomia" : cat.defaultIndicator,
+          data: cat.id === 1 ? "+48% incremento score benessere percepito" : cat.defaultData,
+          source: "Survey somministrata da psicologi di struttura",
+          sourceType: "SELF_REPORTED",
+          assessment: "Positive",
+          target: cat.defaultTarget,
+        })),
+      },
+    ],
+    notes: "Dossier predisposto per Fondo di Venture Philanthropy & blended finance bancario.",
+  },
+];
+
+export function cloneAssessment(
+  source: AssessmentEntity,
+  newTitle: string,
+  newAttuatorName?: string,
+  newAttuatorType?: AttuatorType,
+  newTargetSupporter?: TargetSupporterType
+): AssessmentEntity {
+  const newId = `ass-${Date.now()}`;
+  const nextNumber = Math.floor(100 + Math.random() * 900);
+  const now = new Date().toISOString();
+
+  const clonedImpacts: ImpactItem[] = source.impacts.map((imp, idx) => ({
+    id: `imp-${newId}-${idx + 1}`,
+    title: imp.title,
+    description: imp.description,
+    classification: imp.classification,
+    rows: imp.rows.map((r) => ({ ...r })),
+  }));
+
+  const clonedProfile: AttuatorProfile = {
+    ...source.profile,
+    name: newAttuatorName && newAttuatorName.trim() !== "" ? newAttuatorName.trim() : `${source.profile.name} (Copia)`,
+    type: newAttuatorType ?? source.profile.type,
+    targetSupporter: newTargetSupporter ?? source.profile.targetSupporter,
+  };
+
+  return {
+    id: newId,
+    code: `ASS-${nextNumber}`,
+    assessmentTitle: newTitle.trim(),
+    createdAt: now,
+    updatedAt: now,
+    profile: clonedProfile,
+    impacts: clonedImpacts,
+    notes: `Clonato a partire da "${source.assessmentTitle}" (${source.code})`,
+  };
+}
+

@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Award,
   BookOpen,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Copy,
   FileCheck2,
   FileSpreadsheet,
+  FolderOpen,
   Info,
   Layers,
+  Pencil,
   Plus,
   Printer,
   RefreshCcw,
@@ -25,10 +28,13 @@ import {
 } from "lucide-react";
 import {
   ATTUATOR_TYPE_LABELS,
+  AssessmentEntity,
   AttuatorProfile,
+  AttuatorType,
   CLASSIFICATION_INFO,
   IMP_CATEGORIES,
   IMP_RISK_TYPES,
+  INITIAL_DEFAULT_ASSESSMENTS,
   INITIAL_DEFAULT_IMPACTS,
   INITIAL_DEFAULT_PROFILE,
   ImpactCategoryDef,
@@ -36,9 +42,13 @@ import {
   ImpactDimensionKey,
   ImpactItem,
   TARGET_SUPPORTER_LABELS,
+  TargetSupporterType,
+  cloneAssessment,
 } from "@/lib/imp-framework";
 import { Badge, Card, Modal, SectionTitle } from "@/components/ui";
 import { cn } from "@/lib/format";
+
+const STORAGE_KEY = "arena_impact_assessments_v1";
 
 const DIMENSION_COLORS: Record<ImpactDimensionKey, { bg: string; text: string; border: string; badge: string }> = {
   WHAT: { bg: "bg-emerald-50/70", text: "text-emerald-900", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },
@@ -49,11 +59,23 @@ const DIMENSION_COLORS: Record<ImpactDimensionKey, { bg: string; text: string; b
 };
 
 export function ImpactAssessmentPanel() {
-  const [profile, setProfile] = useState<AttuatorProfile>(INITIAL_DEFAULT_PROFILE);
-  const [impacts, setImpacts] = useState<ImpactItem[]>(INITIAL_DEFAULT_IMPACTS);
+  const [assessments, setAssessments] = useState<AssessmentEntity[]>(INITIAL_DEFAULT_ASSESSMENTS);
+  const [activeAssessmentId, setActiveAssessmentId] = useState<string>(INITIAL_DEFAULT_ASSESSMENTS[0].id);
   const [activeImpactIndex, setActiveImpactIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"ASSESSMENT" | "GUIDA" | "REPORT_SOSTENITORI">("ASSESSMENT");
+  const [showCloneModal, setShowCloneModal] = useState<boolean>(false);
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  // Form states for Cloning / Adding New Assessment
+  const [cloneFormTitle, setCloneFormTitle] = useState<string>("");
+  const [cloneFormAttuatorName, setCloneFormAttuatorName] = useState<string>("");
+  const [cloneFormType, setCloneFormType] = useState<AttuatorType>("IMPRESA_SOCIALE");
+  const [cloneFormTargetSupporter, setCloneFormTargetSupporter] = useState<TargetSupporterType>("PA_PUBBLICA_AMMINISTRAZIONE");
+  const [cloneFormSector, setCloneFormSector] = useState<string>("");
+  const [cloneFormTerritory, setCloneFormTerritory] = useState<string>("");
+  const [cloneMode, setCloneMode] = useState<"COPY_CURRENT" | "BLANK_TEMPLATE">("COPY_CURRENT");
+
   const [collapsedDimensions, setCollapsedDimensions] = useState<Record<ImpactDimensionKey, boolean>>({
     WHAT: false,
     WHO: false,
@@ -61,19 +83,168 @@ export function ImpactAssessmentPanel() {
     CONTRIBUTION: false,
     RISK: false,
   });
-  const [notification, setNotification] = useState<string | null>(null);
 
-  const currentImpact = impacts[activeImpactIndex] ?? impacts[0];
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAssessments(parsed);
+          setActiveAssessmentId(parsed[0].id);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load assessments from localStorage:", e);
+    }
+  }, []);
+
+  // Sync to localStorage
+  const saveToStorage = (updatedAssessments: AssessmentEntity[]) => {
+    setAssessments(updatedAssessments);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedAssessments));
+    } catch (e) {
+      console.warn("Could not save assessments to localStorage:", e);
+    }
+  };
 
   const triggerNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
   };
 
+  const currentAssessment =
+    assessments.find((a) => a.id === activeAssessmentId) || assessments[0] || INITIAL_DEFAULT_ASSESSMENTS[0];
+  const profile = currentAssessment.profile;
+  const impacts = currentAssessment.impacts;
+  const currentImpact = impacts[activeImpactIndex] ?? impacts[0];
+
+  // Open clone modal with pre-filled default data
+  const handleOpenCloneModal = () => {
+    const nextCount = assessments.length + 1;
+    setCloneFormTitle(`Assessment ${nextCount} · Valutazione Nuova Proposta d'Impatto`);
+    setCloneFormAttuatorName(`${profile.name} (Nuova Iniziativa)`);
+    setCloneFormType(profile.type);
+    setCloneFormTargetSupporter(profile.targetSupporter);
+    setCloneFormSector(profile.sector);
+    setCloneFormTerritory(profile.territory);
+    setCloneMode("COPY_CURRENT");
+    setShowCloneModal(true);
+  };
+
+  // Submit Clone / Add Assessment
+  const handleConfirmClone = () => {
+    if (!cloneFormTitle.trim()) {
+      alert("Inserire un titolo per distinguere l'assessment.");
+      return;
+    }
+
+    let newEntity: AssessmentEntity;
+    if (cloneMode === "COPY_CURRENT") {
+      newEntity = cloneAssessment(
+        currentAssessment,
+        cloneFormTitle,
+        cloneFormAttuatorName,
+        cloneFormType,
+        cloneFormTargetSupporter
+      );
+      newEntity.profile.sector = cloneFormSector || currentAssessment.profile.sector;
+      newEntity.profile.territory = cloneFormTerritory || currentAssessment.profile.territory;
+    } else {
+      const newId = `ass-${Date.now()}`;
+      const nextNum = Math.floor(100 + Math.random() * 900);
+      newEntity = {
+        id: newId,
+        code: `ASS-${nextNum}`,
+        assessmentTitle: cloneFormTitle.trim(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        profile: {
+          name: cloneFormAttuatorName.trim() || "Nuovo Soggetto Attuatore",
+          type: cloneFormType,
+          targetSupporter: cloneFormTargetSupporter,
+          sector: cloneFormSector.trim() || "Innovazione Sociale",
+          territory: cloneFormTerritory.trim() || "Nazionale / Territoriale",
+          mission: "Sintesi della proposta e degli obiettivi di impatto.",
+          overallClassification: "BENEFIT_STAKEHOLDERS",
+        },
+        impacts: INITIAL_DEFAULT_IMPACTS.map((imp, idx) => ({
+          id: `imp-${newId}-${idx + 1}`,
+          title: `Impatto ${idx + 1}: Obiettivo Specifico`,
+          description: "Descrizione dell'esito per i beneficiari.",
+          classification: "BENEFIT_STAKEHOLDERS",
+          rows: IMP_CATEGORIES.map((c) => ({
+            categoryId: c.id,
+            indicator: "",
+            data: "",
+            source: "",
+            sourceType: "SELF_REPORTED",
+            assessment: c.assessmentOptions ? c.assessmentOptions[0].value : "",
+            target: "",
+          })),
+        })),
+        notes: "Nuovo assessment inizializzato da template IMP.",
+      };
+    }
+
+    const nextList = [...assessments, newEntity];
+    saveToStorage(nextList);
+    setActiveAssessmentId(newEntity.id);
+    setActiveImpactIndex(0);
+    setShowCloneModal(false);
+    triggerNotification(`Assessment "${newEntity.assessmentTitle}" creato e registrato!`);
+  };
+
+  // Delete current assessment
+  const handleDeleteAssessment = (id: string) => {
+    if (assessments.length <= 1) {
+      alert("È necessario mantenere almeno un assessment attivo nel sistema.");
+      return;
+    }
+    const target = assessments.find((a) => a.id === id);
+    if (confirm(`Sei sicuro di voler eliminare l'assessment "${target?.assessmentTitle}"?`)) {
+      const nextList = assessments.filter((a) => a.id !== id);
+      saveToStorage(nextList);
+      setActiveAssessmentId(nextList[0].id);
+      setActiveImpactIndex(0);
+      triggerNotification("Assessment eliminato dal sistema.");
+    }
+  };
+
+  // Update current assessment's impacts
+  const updateCurrentImpacts = (newImpacts: ImpactItem[]) => {
+    const updatedList = assessments.map((ass) => {
+      if (ass.id === activeAssessmentId) {
+        return { ...ass, impacts: newImpacts, updatedAt: new Date().toISOString() };
+      }
+      return ass;
+    });
+    saveToStorage(updatedList);
+  };
+
+  // Update current assessment's profile
+  const updateCurrentProfile = (newProfile: AttuatorProfile, notes?: string) => {
+    const updatedList = assessments.map((ass) => {
+      if (ass.id === activeAssessmentId) {
+        return {
+          ...ass,
+          profile: newProfile,
+          notes: notes !== undefined ? notes : ass.notes,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return ass;
+    });
+    saveToStorage(updatedList);
+  };
+
+  // Add impact to current assessment
   const handleAddImpact = () => {
     const nextNumber = impacts.length + 1;
     const newImpact: ImpactItem = {
-      id: `imp-${Date.now()}`,
+      id: `imp-${activeAssessmentId}-${Date.now()}`,
       title: `Impatto ${nextNumber}: Nuovo Obiettivo di Impatto Sociale / Ambientale`,
       description: "Descrivere l'esito generato per i beneficiari, il problema sociale affrontato e la modalità di intervento.",
       classification: "BENEFIT_STAKEHOLDERS",
@@ -87,52 +258,53 @@ export function ImpactAssessmentPanel() {
         target: "",
       })),
     };
-    setImpacts((prev) => [...prev, newImpact]);
+    const nextImpacts = [...impacts, newImpact];
+    updateCurrentImpacts(nextImpacts);
     setActiveImpactIndex(impacts.length);
     triggerNotification(`Impatto ${nextNumber} aggiunto con successo!`);
   };
 
+  // Remove impact from current assessment
   const handleRemoveImpact = (index: number) => {
     if (impacts.length <= 1) {
       alert("È necessario mantenere almeno un impatto per la qualificazione.");
       return;
     }
     if (confirm(`Sei sicuro di voler eliminare "${impacts[index].title}"?`)) {
-      const updated = impacts.filter((_, i) => i !== index);
-      setImpacts(updated);
+      const nextImpacts = impacts.filter((_, i) => i !== index);
+      updateCurrentImpacts(nextImpacts);
       setActiveImpactIndex(Math.max(0, index - 1));
-      triggerNotification("Impatto eliminato.");
+      triggerNotification("Impatto rimosso.");
     }
   };
 
+  // Update row in current impact
   const handleUpdateRow = (
     categoryId: number,
     field: "indicator" | "data" | "source" | "sourceType" | "assessment" | "target",
     value: string
   ) => {
-    setImpacts((prev) => {
-      const next = [...prev];
-      const imp = { ...next[activeImpactIndex] };
-      imp.rows = imp.rows.map((r) => (r.categoryId === categoryId ? { ...r, [field]: value } : r));
-      next[activeImpactIndex] = imp;
-      return next;
-    });
+    const nextImpacts = [...impacts];
+    const imp = { ...nextImpacts[activeImpactIndex] };
+    imp.rows = imp.rows.map((r) => (r.categoryId === categoryId ? { ...r, [field]: value } : r));
+    nextImpacts[activeImpactIndex] = imp;
+    updateCurrentImpacts(nextImpacts);
   };
 
+  // Update impact metadata (title, description, classification)
   const handleUpdateImpactMeta = (field: "title" | "description" | "classification", value: string) => {
-    setImpacts((prev) => {
-      const next = [...prev];
-      next[activeImpactIndex] = { ...next[activeImpactIndex], [field]: value };
-      return next;
-    });
+    const nextImpacts = [...impacts];
+    nextImpacts[activeImpactIndex] = { ...nextImpacts[activeImpactIndex], [field]: value };
+    updateCurrentImpacts(nextImpacts);
   };
 
-  const handleResetDefaults = () => {
-    if (confirm("Vuoi ripristinare i 2 Impatti di esempio originali?")) {
-      setImpacts(INITIAL_DEFAULT_IMPACTS);
-      setProfile(INITIAL_DEFAULT_PROFILE);
+  // Reset to initial default assessments
+  const handleResetAllDefaults = () => {
+    if (confirm("Vuoi ripristinare tutti gli Assessment predefiniti originali?")) {
+      saveToStorage(INITIAL_DEFAULT_ASSESSMENTS);
+      setActiveAssessmentId(INITIAL_DEFAULT_ASSESSMENTS[0].id);
       setActiveImpactIndex(0);
-      triggerNotification("Dati di default ripristinati.");
+      triggerNotification("Assessment di default ripristinati.");
     }
   };
 
@@ -140,7 +312,7 @@ export function ImpactAssessmentPanel() {
     setCollapsedDimensions((prev) => ({ ...prev, [dim]: !prev[dim] }));
   };
 
-  // Dimensions grouping
+  // Group categories into the 5 dimensions
   const dimensions: { key: ImpactDimensionKey; label: string; sub: string; categories: ImpactCategoryDef[] }[] = [
     {
       key: "WHAT",
@@ -174,7 +346,7 @@ export function ImpactAssessmentPanel() {
     },
   ];
 
-  // Calculated Metrics
+  // Metrics for active assessment
   const filledRowsCount = currentImpact?.rows.filter((r) => r.indicator.trim() !== "" && r.data.trim() !== "").length ?? 0;
   const totalRowsCount = IMP_CATEGORIES.length;
   const completionPercentage = Math.round((filledRowsCount / totalRowsCount) * 100);
@@ -189,7 +361,80 @@ export function ImpactAssessmentPanel() {
         </div>
       )}
 
-      {/* Header Profile & Supporter Pre-Qualification Summary */}
+      {/* TOP MULTI-ASSESSMENT SWITCHER & CLONE TOOLBAR */}
+      <Card className="p-4 bg-slate-900 border-slate-800 text-white shadow-lg">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          {/* Assessment Selector */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-xs">
+                <FolderOpen className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Assessment Attivo:
+              </span>
+            </div>
+
+            <select
+              value={activeAssessmentId}
+              onChange={(e) => {
+                setActiveAssessmentId(e.target.value);
+                setActiveImpactIndex(0);
+              }}
+              className="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-bold text-white shadow-inner focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 max-w-md truncate"
+            >
+              {assessments.map((ass) => (
+                <option key={ass.id} value={ass.id}>
+                  [{ass.code}] {ass.assessmentTitle} — {ass.profile.name}
+                </option>
+              ))}
+            </select>
+
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-mono font-bold text-emerald-400">
+              {currentAssessment.code}
+            </span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleOpenCloneModal}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-3.5 py-2 text-xs font-bold text-slate-950 shadow-md shadow-emerald-900/30 transition hover:from-emerald-400 hover:to-teal-400"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Aggiungi / Clona Assessment
+            </button>
+
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Modifica Dati
+            </button>
+
+            {assessments.length > 1 && (
+              <button
+                onClick={() => handleDeleteAssessment(activeAssessmentId)}
+                title="Elimina questo assessment"
+                className="inline-flex items-center gap-1 rounded-xl border border-rose-900/40 bg-rose-950/40 p-2 text-xs text-rose-400 hover:bg-rose-900/60 hover:text-rose-200"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            <button
+              onClick={handleResetAllDefaults}
+              title="Ripristina assessment predefiniti"
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-800/50 p-2 text-xs text-slate-400 hover:bg-slate-700 hover:text-white"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Hero Card for Current Assessment Profile */}
       <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white shadow-xl">
         <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
         <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
@@ -197,7 +442,7 @@ export function ImpactAssessmentPanel() {
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Pre-Qualificazione Attuatore &amp; Supporter Match
+                {currentAssessment.code} · Pre-Qualificazione Attuatore
               </span>
               <span className="rounded-full border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-xs text-slate-300">
                 {ATTUATOR_TYPE_LABELS[profile.type]}
@@ -207,33 +452,28 @@ export function ImpactAssessmentPanel() {
               </span>
             </div>
 
-            <h1 className="text-2xl font-black tracking-tight text-white lg:text-3xl">
-              {profile.name}
-            </h1>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                {currentAssessment.assessmentTitle}
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-white lg:text-3xl">
+                {profile.name}
+              </h1>
+            </div>
+
             <p className="max-w-3xl text-sm leading-relaxed text-slate-300">
               {profile.mission}
             </p>
+
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
               <span>📍 Territorio: <strong className="text-slate-200">{profile.territory}</strong></span>
               <span>🏷️ Settore: <strong className="text-slate-200">{profile.sector}</strong></span>
-              <span>🎯 Sostenitore Target: <strong className="text-slate-200">{TARGET_SUPPORTER_LABELS[profile.targetSupporter]}</strong></span>
+              <span>🎯 Sostenitore: <strong className="text-slate-200">{TARGET_SUPPORTER_LABELS[profile.targetSupporter]}</strong></span>
+              <span>🕒 Ultimo aggiornamento: <strong className="text-slate-200">{new Date(currentAssessment.updatedAt).toLocaleDateString("it-IT")}</strong></span>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setShowProfileModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-3.5 py-2.5 text-xs font-semibold text-slate-200 shadow-sm transition hover:bg-slate-700 hover:text-white"
-            >
-              Modifica Profilo Attuatore
-            </button>
-            <button
-              onClick={handleResetDefaults}
-              title="Ripristina valori di esempio originali"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/60 p-2.5 text-xs text-slate-400 hover:bg-slate-700 hover:text-white"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
             <button
               onClick={() => {
                 setActiveTab("REPORT_SOSTENITORI");
@@ -242,7 +482,7 @@ export function ImpactAssessmentPanel() {
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-900/30 transition hover:from-emerald-400 hover:to-teal-400"
             >
               <Printer className="h-4 w-4" />
-              Stampa / Esporta Report
+              Stampa / Esporta Dossier
             </button>
           </div>
         </div>
@@ -333,7 +573,7 @@ export function ImpactAssessmentPanel() {
         </div>
 
         <div className="text-xs text-slate-500">
-          Framework standard internazionale: <strong>Impact Management Project (IMP)</strong>
+          Totale Assessment registrati: <strong>{assessments.length}</strong>
         </div>
       </div>
 
@@ -347,7 +587,7 @@ export function ImpactAssessmentPanel() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="mr-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Impatti Rilevati:
+                  Impatti Rilevati in questo Assessment:
                 </span>
                 {impacts.map((imp, idx) => {
                   const isActive = idx === activeImpactIndex;
@@ -651,7 +891,7 @@ export function ImpactAssessmentPanel() {
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              <span>I dati inseriti vengono salvati nello stato della sessione per la valutazione del Sostenitore.</span>
+              <span>Assessment salvato con persistenza locale e sincronizzazione per il Sostenitore.</span>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -961,17 +1201,17 @@ export function ImpactAssessmentPanel() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="rounded bg-slate-900 px-2 py-0.5 text-xs font-black text-white">
-                    SUPPORTER SCORECARD &amp; AUDIT REPORT
+                    {currentAssessment.code} · SUPPORTER SCORECARD
                   </span>
                   <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                     Framework IMP Valido
                   </span>
                 </div>
                 <h2 className="mt-2 text-2xl font-black text-slate-900">
-                  Dossier di Pre-Qualificazione &amp; Valutazione d&apos;Impatto
+                  {currentAssessment.assessmentTitle}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Generato per: <strong>{TARGET_SUPPORTER_LABELS[profile.targetSupporter]}</strong> · Data istruttoria: {new Date().toLocaleDateString("it-IT")}
+                  Attuatore: <strong>{profile.name}</strong> ({ATTUATOR_TYPE_LABELS[profile.type]}) · Sostenitore: <strong>{TARGET_SUPPORTER_LABELS[profile.targetSupporter]}</strong>
                 </p>
               </div>
 
@@ -1003,7 +1243,7 @@ export function ImpactAssessmentPanel() {
               </div>
 
               <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <span className="text-[10px] font-bold uppercase text-slate-400">Territorio di Impatto</span>
+                <span className="text-[10px] font-bold uppercase text-slate-400">Territorio &amp; Settore</span>
                 <div className="mt-1 font-bold text-slate-900">{profile.territory}</div>
                 <div className="text-[11px] text-slate-500">{profile.sector}</div>
               </div>
@@ -1140,11 +1380,200 @@ export function ImpactAssessmentPanel() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: EDIT ATTUATOR PROFILE                                             */}
+      {/* MODAL: CLONE / ADD ASSESSMENT                                            */}
+      {/* ========================================================================= */}
+      {showCloneModal && (
+        <Modal title="Aggiungi / Clona Assessment per un Attuatore" onClose={() => setShowCloneModal(false)} wide>
+          <div className="space-y-4 text-xs">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+              <p className="text-xs text-emerald-900 leading-relaxed">
+                <strong>Clonazione Strutturata:</strong> Questa operazione crea una nuova istanza distinta nel sistema, con un proprio codice univoco, pronta per essere personalizzata per qualsiasi attuatore (impresa sociale, non profit, startup) e per i rispettivi sostenitori.
+              </p>
+            </div>
+
+            {/* Modalità di clonazione */}
+            <div>
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Modalità di Creazione
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 transition",
+                    cloneMode === "COPY_CURRENT"
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-200"
+                      : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="cloneMode"
+                    checked={cloneMode === "COPY_CURRENT"}
+                    onChange={() => setCloneMode("COPY_CURRENT")}
+                    className="text-emerald-600"
+                  />
+                  <div>
+                    <div>Clona Matrice Corrente</div>
+                    <div className="text-[11px] font-normal text-slate-500">Copia tutti gli impatti e dati dell&apos;assessment attivo</div>
+                  </div>
+                </label>
+
+                <label
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 transition",
+                    cloneMode === "BLANK_TEMPLATE"
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-200"
+                      : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="cloneMode"
+                    checked={cloneMode === "BLANK_TEMPLATE"}
+                    onChange={() => setCloneMode("BLANK_TEMPLATE")}
+                    className="text-emerald-600"
+                  />
+                  <div>
+                    <div>Nuovo da Template IMP</div>
+                    <div className="text-[11px] font-normal text-slate-500">Inizializza con i 2 impatti standard vuoti</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Titolo distintivo */}
+            <div>
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Titolo Distintivo dell&apos;Assessment <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={cloneFormTitle}
+                onChange={(e) => setCloneFormTitle(e.target.value)}
+                placeholder="Es. Valutazione Bando Welfare 2026 · Cooperativa Rinascita"
+                className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+              />
+              <span className="text-[11px] text-slate-500">Questo titolo permetterà di distinguere chiaramente la valutazione dalle altre nel database.</span>
+            </div>
+
+            {/* Denominazione Attuatore */}
+            <div>
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Denominazione Soggetto Attuatore
+              </label>
+              <input
+                type="text"
+                value={cloneFormAttuatorName}
+                onChange={(e) => setCloneFormAttuatorName(e.target.value)}
+                placeholder="Es. Cooperativa Sociale Rinascita ETS"
+                className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Tipologia Soggetto Attuatore
+                </label>
+                <select
+                  value={cloneFormType}
+                  onChange={(e) => setCloneFormType(e.target.value as AttuatorType)}
+                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
+                >
+                  <option value="IMPRESA_SOCIALE">Impresa Sociale (D.Lgs. 112/2017)</option>
+                  <option value="STARTUP_INNOVATIVA_IMPATTO">Startup Innovativa a Vocazione Sociale</option>
+                  <option value="ASSOCIAZIONE_NON_PROFIT">Associazione / Organizzazione Non Profit</option>
+                  <option value="COOPERATIVA_SOCIALE">Cooperativa Sociale (Tipo A / B)</option>
+                  <option value="ENTE_TERZO_SETTORE">Ente del Terzo Settore (ETS)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Sostenitore Target Primario
+                </label>
+                <select
+                  value={cloneFormTargetSupporter}
+                  onChange={(e) => setCloneFormTargetSupporter(e.target.value as TargetSupporterType)}
+                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
+                >
+                  <option value="PA_PUBBLICA_AMMINISTRAZIONE">Pubblica Amministrazione (Bandi, Co-progettazione)</option>
+                  <option value="IMPACT_INVESTOR">Investitore ad Impatto (Venture Philanthropy, ESG)</option>
+                  <option value="IMPRESA_FINANZIATRICE_CSR">Impresa Finanziatrice / Corporate CSR</option>
+                  <option value="FONDAZIONE_BANCARIA">Fondazione Erogativa / Ente Filantropico</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Settore di Intervento
+                </label>
+                <input
+                  type="text"
+                  value={cloneFormSector}
+                  onChange={(e) => setCloneFormSector(e.target.value)}
+                  placeholder="Es. Inclusione socio-lavorativa, rigenerazione urbana..."
+                  className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Ambito Territoriale
+                </label>
+                <input
+                  type="text"
+                  value={cloneFormTerritory}
+                  onChange={(e) => setCloneFormTerritory(e.target.value)}
+                  placeholder="Es. Regione Campania / Comune di Napoli"
+                  className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+              <button
+                onClick={() => setShowCloneModal(false)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleConfirmClone}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-emerald-700"
+              >
+                Crea e Attiva Assessment
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: EDIT ATTUATOR PROFILE & ASSESSMENT TITLE                           */}
       {/* ========================================================================= */}
       {showProfileModal && (
-        <Modal title="Modifica Profilo Attuatore &amp; Sostenitore Target" onClose={() => setShowProfileModal(false)} wide>
+        <Modal title="Modifica Titolo &amp; Profilo Attuatore" onClose={() => setShowProfileModal(false)} wide>
           <div className="space-y-4 text-xs">
+            <div>
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Titolo Distintivo Assessment
+              </label>
+              <input
+                type="text"
+                value={currentAssessment.assessmentTitle}
+                onChange={(e) => {
+                  const updatedList = assessments.map((a) =>
+                    a.id === activeAssessmentId ? { ...a, assessmentTitle: e.target.value } : a
+                  );
+                  saveToStorage(updatedList);
+                }}
+                className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900"
+              />
+            </div>
+
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Denominazione Attuatore
@@ -1152,7 +1581,7 @@ export function ImpactAssessmentPanel() {
               <input
                 type="text"
                 value={profile.name}
-                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                onChange={(e) => updateCurrentProfile({ ...profile, name: e.target.value })}
                 className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900"
               />
             </div>
@@ -1164,7 +1593,7 @@ export function ImpactAssessmentPanel() {
                 </label>
                 <select
                   value={profile.type}
-                  onChange={(e) => setProfile({ ...profile, type: e.target.value as any })}
+                  onChange={(e) => updateCurrentProfile({ ...profile, type: e.target.value as any })}
                   className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
                 >
                   <option value="IMPRESA_SOCIALE">Impresa Sociale (D.Lgs. 112/2017)</option>
@@ -1181,7 +1610,7 @@ export function ImpactAssessmentPanel() {
                 </label>
                 <select
                   value={profile.targetSupporter}
-                  onChange={(e) => setProfile({ ...profile, targetSupporter: e.target.value as any })}
+                  onChange={(e) => updateCurrentProfile({ ...profile, targetSupporter: e.target.value as any })}
                   className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
                 >
                   <option value="PA_PUBBLICA_AMMINISTRAZIONE">Pubblica Amministrazione (Bandi, Co-progettazione)</option>
@@ -1200,7 +1629,7 @@ export function ImpactAssessmentPanel() {
                 <input
                   type="text"
                   value={profile.sector}
-                  onChange={(e) => setProfile({ ...profile, sector: e.target.value })}
+                  onChange={(e) => updateCurrentProfile({ ...profile, sector: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
                 />
               </div>
@@ -1212,7 +1641,7 @@ export function ImpactAssessmentPanel() {
                 <input
                   type="text"
                   value={profile.territory}
-                  onChange={(e) => setProfile({ ...profile, territory: e.target.value })}
+                  onChange={(e) => updateCurrentProfile({ ...profile, territory: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
                 />
               </div>
@@ -1225,7 +1654,7 @@ export function ImpactAssessmentPanel() {
               <textarea
                 rows={3}
                 value={profile.mission}
-                onChange={(e) => setProfile({ ...profile, mission: e.target.value })}
+                onChange={(e) => updateCurrentProfile({ ...profile, mission: e.target.value })}
                 className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
               />
             </div>
@@ -1236,7 +1665,7 @@ export function ImpactAssessmentPanel() {
               </label>
               <select
                 value={profile.overallClassification}
-                onChange={(e) => setProfile({ ...profile, overallClassification: e.target.value as ImpactClassification })}
+                onChange={(e) => updateCurrentProfile({ ...profile, overallClassification: e.target.value as ImpactClassification })}
                 className="w-full rounded-lg border border-slate-300 p-2 text-xs font-bold text-slate-800"
               >
                 <option value="ACT_TO_AVOID_HARM">Classe A · Agire per evitare danni (Act to avoid harm)</option>
@@ -1255,11 +1684,11 @@ export function ImpactAssessmentPanel() {
               <button
                 onClick={() => {
                   setShowProfileModal(false);
-                  triggerNotification("Profilo attuatore aggiornato!");
+                  triggerNotification("Dati assessment aggiornati!");
                 }}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
               >
-                Salva Profilo
+                Salva Modifiche
               </button>
             </div>
           </div>
