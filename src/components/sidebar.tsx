@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Award,
   Bot,
   FolderKanban,
   LayoutDashboard,
@@ -16,6 +17,7 @@ import { cn } from "@/lib/format";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "project.view" },
+  { href: "/dashboard/qualificazione", label: "Qualificazione & IMP", icon: Award, perm: "project.view" },
   { href: "/dashboard/opportunities", label: "Radar Opportunità", icon: Radar, perm: "opportunity.view" },
   { href: "/dashboard/projects", label: "Progetti / Pipeline", icon: FolderKanban, perm: "project.view" },
   { href: "/dashboard/ai", label: "AI Console", icon: Bot, perm: "agent.all" },
