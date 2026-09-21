@@ -245,8 +245,8 @@ L'interfaccia utente di Impact Forge adotta un linguaggio visivo tridimensionale
 
 ```bash
 # 1. Clona il repository
-git clone https://github.com/EmanueleDeCandia/ai-arena-impact-venture-building-platform.git
-cd ai-arena-impact-venture-building-platform
+git clone https://github.com/EmanueleDeCandia/impact-venture-building-platform.git
+cd impact-venture-building-platform
 
 # 2. Installa le dipendenze
 npm install
