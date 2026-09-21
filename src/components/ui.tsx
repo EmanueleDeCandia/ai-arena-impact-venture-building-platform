@@ -3,9 +3,26 @@ import { cn } from "@/lib/format";
 import type { ProjectStatus } from "@/db/schema";
 import { STATUS_BADGE, STATUS_LABEL } from "@/lib/workflow";
 
-export function Card({ children, className }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className,
+  raised = false,
+  interactive = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  raised?: boolean;
+  interactive?: boolean;
+}) {
   return (
-    <div className={cn("rounded-xl border border-slate-200 bg-white shadow-sm", className)}>
+    <div
+      className={cn(
+        raised ? "tactile-card-raised" : "tactile-card",
+        interactive && "tactile-card-interactive cursor-pointer",
+        "p-5",
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -23,8 +40,14 @@ export function SectionTitle({
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">{title}</h3>
-        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+        <h3 className="text-engraved text-sm font-black uppercase tracking-wider text-slate-700">
+          {title}
+        </h3>
+        {subtitle && (
+          <p className="text-engraved-subtle mt-1 text-xs font-medium text-slate-500">
+            {subtitle}
+          </p>
+        )}
       </div>
       {right}
     </div>
@@ -45,17 +68,30 @@ export function Stat({
   accent?: string;
 }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-center gap-3">
+    <Card className="p-4.5 transition-all duration-200 hover:-translate-y-0.5">
+      <div className="flex items-center gap-3.5">
         {icon && (
-          <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", accent ?? "bg-emerald-50 text-emerald-600")}>
+          <div
+            className={cn(
+              "tactile-icon-well flex h-11 w-11 shrink-0 items-center justify-center text-base",
+              accent ?? "bg-gradient-to-br from-emerald-50 to-teal-100/80 text-emerald-700"
+            )}
+          >
             {icon}
           </div>
         )}
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
-          <div className="truncate text-xl font-bold text-slate-900">{value}</div>
-          {sub && <div className="text-xs text-slate-500">{sub}</div>}
+        <div className="min-w-0 flex-1">
+          <div className="text-engraved-subtle truncate text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            {label}
+          </div>
+          <div className="text-engraved-strong truncate text-2xl font-black text-slate-900">
+            {value}
+          </div>
+          {sub && (
+            <div className="text-engraved-subtle mt-0.5 truncate text-xs font-medium text-slate-500">
+              {sub}
+            </div>
+          )}
         </div>
       </div>
     </Card>
@@ -66,8 +102,8 @@ export function Badge({ children, className }: { children: ReactNode; className?
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-        className ?? "border-slate-200 bg-slate-100 text-slate-600"
+        "tactile-pill inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-bold tracking-wide transition-all",
+        className ?? "border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100 text-slate-700"
       )}
     >
       {children}
@@ -90,11 +126,16 @@ export function ProgressBar({
 }) {
   const v = Math.max(0, Math.min(100, value));
   return (
-    <div className={cn("h-2 w-full overflow-hidden rounded-full bg-slate-100", className)}>
+    <div className={cn("tactile-progress-track h-3.5 w-full overflow-hidden rounded-full", className)}>
       <div
         className={cn(
-          "h-full rounded-full transition-all",
-          barClassName ?? (v >= 80 ? "bg-emerald-500" : v >= 50 ? "bg-amber-500" : "bg-rose-500")
+          "tactile-progress-fill h-full rounded-full transition-all duration-500",
+          barClassName ??
+            (v >= 80
+              ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+              : v >= 50
+              ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+              : "bg-gradient-to-r from-rose-500 to-red-400")
         )}
         style={{ width: `${v}%` }}
       />
@@ -121,15 +162,15 @@ export function ScoreRing({
   const color = v >= 70 ? "#10b981" : v >= 50 ? "#f59e0b" : "#f43f5e";
   return (
     <div className={cn("flex flex-col items-center gap-1.5", className)}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth={9} />
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="filter drop-shadow-sm">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2ddd2" strokeWidth={10} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
           stroke={color}
-          strokeWidth={9}
+          strokeWidth={10}
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c - (c * v) / 100}
@@ -140,13 +181,16 @@ export function ScoreRing({
           y="50%"
           dominantBaseline="central"
           textAnchor="middle"
-          className="fill-slate-900 text-base font-bold"
+          className="fill-slate-900 text-lg font-black"
+          style={{
+            filter: "drop-shadow(0 -0.5px 0.5px rgba(0,0,0,0.5)) drop-shadow(0 1px 0 rgba(255,255,255,0.9))",
+          }}
         >
           {Math.round(v)}
         </text>
       </svg>
-      {label && <div className="text-xs font-semibold text-slate-700">{label}</div>}
-      {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
+      {label && <div className="text-engraved text-xs font-bold text-slate-800">{label}</div>}
+      {sub && <div className="text-engraved-subtle text-[11px] font-medium text-slate-500">{sub}</div>}
     </div>
   );
 }
@@ -156,15 +200,19 @@ export function CheckItem({ label, passed, hint }: { label: string; passed: bool
     <div className="flex items-start gap-2.5 py-1.5">
       <span
         className={cn(
-          "mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
-          passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-600"
+          "tactile-pill mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-[11px] font-black",
+          passed
+            ? "bg-gradient-to-b from-emerald-100 to-emerald-200 text-emerald-800"
+            : "bg-gradient-to-b from-rose-100 to-rose-200 text-rose-700"
         )}
       >
         {passed ? "✓" : "✕"}
       </span>
       <div>
-        <div className={cn("text-sm", passed ? "text-slate-700" : "font-semibold text-slate-900")}>{label}</div>
-        {hint && <div className="text-xs text-slate-400">{hint}</div>}
+        <div className={cn("text-sm", passed ? "text-engraved text-slate-700" : "text-engraved font-bold text-slate-900")}>
+          {label}
+        </div>
+        {hint && <div className="text-engraved-subtle text-xs text-slate-500">{hint}</div>}
       </div>
     </div>
   );
@@ -172,9 +220,9 @@ export function CheckItem({ label, passed, hint }: { label: string; passed: bool
 
 export function EmptyState({ icon, text }: { icon?: ReactNode; text: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-8 text-center">
+    <div className="tactile-sunken flex flex-col items-center gap-2 rounded-2xl p-8 text-center">
       {icon}
-      <p className="text-sm text-slate-500">{text}</p>
+      <p className="text-engraved-subtle text-sm font-medium text-slate-600">{text}</p>
     </div>
   );
 }
@@ -192,16 +240,22 @@ export function Modal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className={cn("max-h-[85vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl", wide ? "max-w-3xl" : "max-w-lg")}
+        className={cn(
+          "tactile-card-raised max-h-[88vh] w-full overflow-y-auto p-6 md:p-8",
+          wide ? "max-w-3xl" : "max-w-lg"
+        )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-start justify-between">
-          <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+        <div className="mb-4 flex items-start justify-between border-b border-slate-200/80 pb-3">
+          <h2 className="text-engraved text-xl font-black text-slate-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="tactile-btn-secondary flex h-8 w-8 items-center justify-center rounded-lg p-1 text-slate-500 hover:text-slate-900"
+          >
             ✕
           </button>
         </div>
@@ -214,20 +268,22 @@ export function Modal({
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
+      <span className="text-engraved-subtle mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+        {label}
+      </span>
       {children}
     </label>
   );
 }
 
 export const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100";
+  "tactile-input w-full px-3.5 py-2.5 text-sm font-semibold placeholder-slate-400 outline-none";
 
 export const btnPrimary =
-  "inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50";
+  "tactile-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50";
 
 export const btnSecondary =
-  "inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+  "tactile-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-slate-800 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const btnGhost =
-  "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50";
+  "tactile-btn-ghost inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50";

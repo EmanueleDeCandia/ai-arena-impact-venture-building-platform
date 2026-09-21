@@ -53,12 +53,57 @@ import { cn } from "@/lib/format";
 
 const STORAGE_KEY = "arena_impact_assessments_v2";
 
-const DIMENSION_COLORS: Record<ImpactDimensionKey, { bg: string; text: string; border: string; badge: string }> = {
-  WHAT: { bg: "bg-emerald-50/70", text: "text-emerald-900", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  WHO: { bg: "bg-blue-50/70", text: "text-blue-900", border: "border-blue-200", badge: "bg-blue-100 text-blue-800 border-blue-300" },
-  HOW_MUCH: { bg: "bg-purple-50/70", text: "text-purple-900", border: "border-purple-200", badge: "bg-purple-100 text-purple-800 border-purple-300" },
-  CONTRIBUTION: { bg: "bg-amber-50/70", text: "text-amber-900", border: "border-amber-200", badge: "bg-amber-100 text-amber-800 border-amber-300" },
-  RISK: { bg: "bg-rose-50/70", text: "text-rose-900", border: "border-rose-200", badge: "bg-rose-100 text-rose-800 border-rose-300" },
+const DIMENSION_COLORS: Record<
+  ImpactDimensionKey,
+  {
+    cardBg: string;
+    headerBg: string;
+    border: string;
+    badge: string;
+    titleClass: string;
+    subClass: string;
+  }
+> = {
+  WHAT: {
+    cardBg: "bg-gradient-to-b from-[#f3eee4] via-[#e9e2d5] to-[#dfd7c7]",
+    headerBg: "bg-gradient-to-r from-[#eee7dc] via-[#e6decb] to-[#ded5c3]",
+    border: "border-[rgba(65,50,30,0.20)]",
+    badge: "tactile-pill bg-[#f7f2e8] text-slate-800 border-[rgba(65,50,30,0.18)] shadow-xs",
+    titleClass: "text-engraved text-slate-900 font-black",
+    subClass: "text-engraved-subtle text-slate-700 font-medium",
+  },
+  WHO: {
+    cardBg: "bg-gradient-to-b from-[#f1ebe0] via-[#e6dbcc] to-[#dccebb]",
+    headerBg: "bg-gradient-to-r from-[#ece3d4] via-[#e2d6c3] to-[#d8cab7]",
+    border: "border-[rgba(65,50,30,0.20)]",
+    badge: "tactile-pill bg-[#f4ece0] text-slate-800 border-[rgba(65,50,30,0.18)] shadow-xs",
+    titleClass: "text-engraved text-slate-900 font-black",
+    subClass: "text-engraved-subtle text-slate-700 font-medium",
+  },
+  HOW_MUCH: {
+    cardBg: "bg-gradient-to-b from-[#eee8dc] via-[#e3d9c7] to-[#d7ccb5]",
+    headerBg: "bg-gradient-to-r from-[#ebe2d3] via-[#dfd4be] to-[#d4c7b0]",
+    border: "border-[rgba(65,50,30,0.20)]",
+    badge: "tactile-pill bg-[#f0e8d9] text-slate-800 border-[rgba(65,50,30,0.18)] shadow-xs",
+    titleClass: "text-engraved text-slate-900 font-black",
+    subClass: "text-engraved-subtle text-slate-700 font-medium",
+  },
+  CONTRIBUTION: {
+    cardBg: "bg-gradient-to-b from-[#ede5d4] via-[#e0d5c1] to-[#d4c7b0]",
+    headerBg: "bg-gradient-to-r from-[#eae0ce] via-[#dcd0b9] to-[#d1c2a8]",
+    border: "border-[rgba(65,50,30,0.22)]",
+    badge: "tactile-pill bg-[#ede3cf] text-slate-800 border-[rgba(65,50,30,0.2)] shadow-xs",
+    titleClass: "text-engraved text-slate-900 font-black",
+    subClass: "text-engraved-subtle text-slate-700 font-medium",
+  },
+  RISK: {
+    cardBg: "bg-gradient-to-b from-[#eae0ce] via-[#ddd0bc] to-[#d0c1a8]",
+    headerBg: "bg-gradient-to-r from-[#e7dcca] via-[#d9caba] to-[#cca58f]/15",
+    border: "border-[rgba(65,50,30,0.22)]",
+    badge: "tactile-pill bg-[#ebdcc9] text-slate-800 border-[rgba(65,50,30,0.2)] shadow-xs",
+    titleClass: "text-engraved text-slate-900 font-black",
+    subClass: "text-engraved-subtle text-slate-700 font-medium",
+  },
 };
 
 export function ImpactAssessmentPanel() {
@@ -869,69 +914,80 @@ export function ImpactAssessmentPanel() {
           </Card>
 
           {/* 5 Dimensions Accordions / Grouped Tables */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             {dimensions.map((dim) => {
               const isCollapsed = collapsedDimensions[dim.key];
               const styling = DIMENSION_COLORS[dim.key];
 
               return (
-                <div key={dim.key} className={cn("overflow-hidden rounded-2xl border bg-white shadow-sm transition-all", styling.border)}>
+                <div
+                  key={dim.key}
+                  className={cn(
+                    "tactile-card overflow-hidden rounded-3xl transition-all shadow-[0_6px_18px_rgba(50,40,25,0.11),inset_0_1px_0_rgba(255,255,255,0.8)] border",
+                    styling.cardBg,
+                    styling.border
+                  )}
+                >
                   {/* Dimension Header Bar */}
                   <div
                     onClick={() => toggleDimensionCollapse(dim.key)}
                     className={cn(
-                      "flex cursor-pointer items-center justify-between px-6 py-4 transition select-none",
-                      styling.bg
+                      "flex cursor-pointer items-center justify-between px-6 py-4.5 transition-all select-none border-b border-[rgba(50,40,25,0.12)] hover:brightness-[0.98]",
+                      styling.headerBg
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={cn("rounded-lg border px-2.5 py-1 text-xs font-black", styling.badge)}>
+                    <div className="flex items-center gap-3.5">
+                      <span className={cn("px-3 py-1 text-xs font-black tracking-wide", styling.badge)}>
                         {dim.key}
                       </span>
                       <div>
-                        <h3 className={cn("text-base font-bold", styling.text)}>{dim.label}</h3>
-                        <p className="text-xs text-slate-600">{dim.sub}</p>
+                        <h3 className={cn("text-base font-black tracking-tight", styling.titleClass)}>
+                          {dim.label}
+                        </h3>
+                        <p className={cn("text-xs mt-0.5", styling.subClass)}>
+                          {dim.sub}
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-semibold text-slate-500">
+                      <span className="text-xs font-bold text-slate-700 text-engraved-subtle bg-[rgba(255,255,255,0.45)] px-3 py-1 rounded-full border border-[rgba(50,40,25,0.15)] shadow-xs">
                         {dim.categories.length} categorie dati
                       </span>
-                      <button className="rounded-lg p-1 text-slate-500 hover:bg-white/60">
-                        {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                      </button>
+                      <div className="tactile-btn-secondary p-1.5 rounded-xl cursor-pointer">
+                        {isCollapsed ? <ChevronRight className="h-4 w-4 text-slate-700" /> : <ChevronDown className="h-4 w-4 text-slate-700" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Dimension Table Content */}
                   {!isCollapsed && (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
+                    <div className="overflow-x-auto p-4 pt-3">
+                      <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600">
-                            <th className="w-1/4 px-4 py-3 font-bold uppercase tracking-wider">
+                          <tr className="border-b border-[rgba(50,40,25,0.16)] bg-[rgba(50,40,25,0.06)] text-slate-700">
+                            <th className="w-1/4 px-4 py-3 font-extrabold uppercase tracking-wider text-[11px] text-engraved-subtle rounded-tl-xl">
                               Categoria Dati (IMP) &amp; Azioni
                             </th>
-                            <th className="w-1/5 px-4 py-3 font-bold uppercase tracking-wider">
+                            <th className="w-1/5 px-4 py-3 font-extrabold uppercase tracking-wider text-[11px] text-engraved-subtle">
                               1. Indicatore / Tipologia
                             </th>
-                            <th className="w-1/5 px-4 py-3 font-bold uppercase tracking-wider">
+                            <th className="w-1/5 px-4 py-3 font-extrabold uppercase tracking-wider text-[11px] text-engraved-subtle">
                               2. Dati Rilevati (Data)
                             </th>
-                            <th className="w-1/6 px-4 py-3 font-bold uppercase tracking-wider">
+                            <th className="w-1/6 px-4 py-3 font-extrabold uppercase tracking-wider text-[11px] text-engraved-subtle">
                               3. Fonte (Source &amp; Tipo)
                             </th>
-                            <th className="w-1/6 px-4 py-3 font-bold uppercase tracking-wider">
+                            <th className="w-1/6 px-4 py-3 font-extrabold uppercase tracking-wider text-[11px] text-engraved-subtle">
                               4. Valutazione (Assessment)
                             </th>
-                            <th className="w-28 px-4 py-3 font-bold uppercase tracking-wider">
+                            <th className="w-28 px-4 py-3 font-extrabold uppercase tracking-wider text-[11px] text-engraved-subtle">
                               Target / Presidio
                             </th>
-                            <th className="w-8 px-2 py-3"></th>
+                            <th className="w-8 px-2 py-3 rounded-tr-xl"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200">
+                        <tbody className="divide-y divide-[rgba(50,40,25,0.10)]">
                           {dim.categories.map((cat) => {
                             // Find all rows for this category
                             const categoryRows = currentImpact.rows.filter((r) => r.categoryId === cat.id);
@@ -955,62 +1011,52 @@ export function ImpactAssessmentPanel() {
                               <tr
                                 key={row.rowId}
                                 className={cn(
-                                  "hover:bg-slate-50/90 transition",
-                                  rowIdx > 0 ? "bg-slate-50/40" : "bg-white"
+                                  "hover:bg-[rgba(255,255,255,0.45)] transition-colors",
+                                  rowIdx > 0 ? "bg-[rgba(255,255,255,0.18)]" : "bg-[rgba(255,255,255,0.28)]"
                                 )}
                               >
                                 {/* Category Header (shown on first row or with badge on sub-rows) */}
                                 <td className="p-4 align-top">
                                   {rowIdx === 0 ? (
-                                    <div className="space-y-1.5">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="font-bold text-slate-900">{cat.id}. {cat.name}</span>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-black text-slate-900 text-engraved">
+                                          {cat.id}. {cat.name}
+                                        </span>
                                         {cat.ref && (
-                                          <span className="rounded bg-slate-200 px-1 py-0.2 text-[10px] font-bold text-slate-700">
+                                          <span className="rounded-md bg-[rgba(50,40,25,0.09)] border border-[rgba(50,40,25,0.14)] px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
                                             ({cat.ref})
                                           </span>
                                         )}
                                       </div>
-                                      <div className="text-[11px] italic text-slate-500 font-medium">
+                                      <div className="text-[11px] italic text-slate-600 font-medium">
                                         IMP: {cat.originalName}
                                       </div>
-                                      <p className="text-[11px] leading-relaxed text-slate-600">
+                                      <p className="text-[11px] leading-relaxed text-slate-700">
                                         {cat.definition}
                                       </p>
-                                      <div className="rounded bg-slate-100 p-1.5 text-[10px] text-slate-600">
+                                      <div className="tactile-sunken rounded-xl p-2.5 text-[10px] text-slate-700 bg-[rgba(50,40,25,0.04)] border border-[rgba(50,40,25,0.12)]">
                                         💡 <strong>Guida:</strong> {cat.operationalGuidance}
                                       </div>
 
                                       {/* Add Row Button */}
-                                      <div className="pt-2">
-                                        {cat.id === 14 ? (
-                                          <div className="space-y-1">
-                                            <button
-                                              onClick={() => handleAddRowToCategory(cat)}
-                                              className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-800 hover:bg-rose-100"
-                                            >
-                                              <Plus className="h-3 w-3" />
-                                              Aggiungi Rischio IMP ({activeRows.length} attivi)
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <button
-                                            onClick={() => handleAddRowToCategory(cat)}
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                                          >
-                                            <Plus className="h-3 w-3" />
-                                            Aggiungi Indicatore / Riga ({activeRows.length})
-                                          </button>
-                                        )}
+                                      <div className="pt-1.5">
+                                        <button
+                                          onClick={() => handleAddRowToCategory(cat)}
+                                          className="tactile-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-slate-800 rounded-xl transition"
+                                        >
+                                          <Plus className="h-3.5 w-3.5" />
+                                          Aggiungi {cat.id === 14 ? "Rischio IMP" : "Indicatore / Riga"} ({activeRows.length})
+                                        </button>
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="space-y-1 pl-2 border-l-2 border-slate-300">
-                                      <span className="inline-flex items-center gap-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                                    <div className="space-y-1 pl-2 border-l-2 border-amber-800/30">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-[rgba(50,40,25,0.09)] border border-[rgba(50,40,25,0.14)] px-2 py-0.5 text-[10px] font-bold text-slate-800">
                                         ↳ Riga {rowIdx + 1} aggiuntiva ({cat.name.split("(")[0]})
                                       </span>
                                       {cat.id === 14 && (
-                                        <span className="block text-[10px] text-rose-700 font-medium">
+                                        <span className="block text-[10px] text-slate-600 font-semibold">
                                           Specifica ulteriore tipologia tra i 9 rischi IMP
                                         </span>
                                       )}
@@ -1022,7 +1068,7 @@ export function ImpactAssessmentPanel() {
                                 <td className="p-4 align-top space-y-2">
                                   {cat.id === 14 && (
                                     <div>
-                                      <span className="block text-[10px] font-bold text-rose-900 mb-1">
+                                      <span className="block text-[10px] font-bold text-slate-800 mb-1 text-engraved-subtle">
                                         Seleziona tra i 9 Rischi IMP:
                                       </span>
                                       <select
@@ -1038,7 +1084,7 @@ export function ImpactAssessmentPanel() {
                                             handleUpdateRowByRowId(row.rowId, "data", `Presidio: ${selectedType.desc}`);
                                           }
                                         }}
-                                        className="w-full rounded-lg border border-rose-300 bg-rose-50/60 p-1.5 text-[11px] font-bold text-rose-950 focus:border-rose-500 focus:ring-1 focus:ring-rose-200"
+                                        className="tactile-input w-full rounded-xl p-2 text-[11px] font-bold text-slate-900 border-[rgba(50,40,25,0.22)] bg-[#fdfcf9]"
                                       >
                                         <option value="">-- Seleziona Rischio Codificato --</option>
                                         {IMP_RISK_TYPES.map((rt) => (
@@ -1055,7 +1101,7 @@ export function ImpactAssessmentPanel() {
                                     value={row.indicator}
                                     onChange={(e) => handleUpdateRowByRowId(row.rowId, "indicator", e.target.value)}
                                     placeholder={cat.id === 14 ? "Dettaglio del rischio..." : "Es. % miglioramento reddito..."}
-                                    className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                                    className="tactile-input w-full rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 border-[rgba(50,40,25,0.22)] bg-[#fdfcf9]"
                                   />
                                 </td>
 
@@ -1066,7 +1112,7 @@ export function ImpactAssessmentPanel() {
                                     value={row.data}
                                     onChange={(e) => handleUpdateRowByRowId(row.rowId, "data", e.target.value)}
                                     placeholder="Es. +35% occupati a 6 mesi..."
-                                    className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                                    className="tactile-input w-full rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 border-[rgba(50,40,25,0.22)] bg-[#fdfcf9]"
                                   />
                                 </td>
 
@@ -1077,12 +1123,12 @@ export function ImpactAssessmentPanel() {
                                     value={row.source}
                                     onChange={(e) => handleUpdateRowByRowId(row.rowId, "source", e.target.value)}
                                     placeholder="Es. Survey beneficiari Q2 / DB"
-                                    className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                                    className="tactile-input w-full rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 border-[rgba(50,40,25,0.22)] bg-[#fdfcf9]"
                                   />
                                   <select
                                     value={row.sourceType}
                                     onChange={(e) => handleUpdateRowByRowId(row.rowId, "sourceType", e.target.value as any)}
-                                    className="w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-700"
+                                    className="tactile-input w-full rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-slate-800 border-[rgba(50,40,25,0.2)] bg-[#fdfcf9]"
                                   >
                                     <option value="SELF_REPORTED">Self-Reported (Survey diretta)</option>
                                     <option value="NON_SELF_REPORTED">Non-Self-Reported (Dato oggettivo/DB)</option>
@@ -1096,7 +1142,7 @@ export function ImpactAssessmentPanel() {
                                     <select
                                       value={row.assessment}
                                       onChange={(e) => handleUpdateRowByRowId(row.rowId, "assessment", e.target.value)}
-                                      className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs font-bold text-slate-800 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                                      className="tactile-input w-full rounded-xl p-2 text-xs font-bold text-slate-900 border-[rgba(50,40,25,0.22)] bg-[#fdfcf9]"
                                     >
                                       {cat.assessmentOptions.map((opt) => (
                                         <option key={opt.value} value={opt.value}>
@@ -1110,7 +1156,7 @@ export function ImpactAssessmentPanel() {
                                       value={row.assessment}
                                       onChange={(e) => handleUpdateRowByRowId(row.rowId, "assessment", e.target.value)}
                                       placeholder="Valutazione qualitativa..."
-                                      className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                                      className="tactile-input w-full rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 border-[rgba(50,40,25,0.22)] bg-[#fdfcf9]"
                                     />
                                   )}
                                 </td>
@@ -1122,7 +1168,7 @@ export function ImpactAssessmentPanel() {
                                     value={row.target ?? ""}
                                     onChange={(e) => handleUpdateRowByRowId(row.rowId, "target", e.target.value)}
                                     placeholder="Es. > 80% / Mitigazione..."
-                                    className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                                    className="tactile-input w-full rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 border-[rgba(50,40,25,0.22)] bg-[#fdfcf9]"
                                   />
                                 </td>
 
@@ -1132,7 +1178,7 @@ export function ImpactAssessmentPanel() {
                                     <button
                                       onClick={() => handleRemoveRowByRowId(row.rowId, cat.id)}
                                       title="Elimina questa riga aggiuntiva"
-                                      className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                                      className="tactile-btn-ghost rounded-lg p-1.5 text-slate-500 hover:text-rose-600 transition"
                                     >
                                       <X className="h-4 w-4" />
                                     </button>
@@ -1151,22 +1197,22 @@ export function ImpactAssessmentPanel() {
           </div>
 
           {/* Bottom Actions */}
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <div className="tactile-card flex flex-wrap items-center justify-between gap-4 rounded-2xl p-5 border border-[rgba(50,40,25,0.18)] bg-gradient-to-b from-[#f2ede4] to-[#ded5c5] shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 text-engraved-subtle">
+              <CheckCircle2 className="h-4 w-4 text-emerald-700" />
               <span>Tutte le righe e i rischi aggiunti vengono salvati e tracciati nello score per il Sostenitore.</span>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => triggerNotification("Assessment salvato con successo!")}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700"
+                className="tactile-btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold"
               >
                 <Save className="h-3.5 w-3.5" />
                 Salva Assessment
               </button>
               <button
                 onClick={() => setActiveTab("REPORT_SOSTENITORI")}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800"
+                className="tactile-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-800"
               >
                 Genera Supporter Scorecard →
               </button>
@@ -1290,15 +1336,15 @@ export function ImpactAssessmentPanel() {
 
             <div className="grid gap-6">
               {/* Dim 1 */}
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
+              <div className="tactile-card rounded-2xl border border-[rgba(65,50,30,0.2)] bg-gradient-to-b from-[#f3eee4] via-[#e9e2d5] to-[#dfd7c7] p-5 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-emerald-900 text-sm">DIMENSIONE 1: WHAT (Quali esiti si generano e quanto contano)</h4>
-                  <Badge className="bg-emerald-100 text-emerald-800">Cat. 1 - 4</Badge>
+                  <h4 className="font-black text-slate-900 text-sm text-engraved">DIMENSIONE 1: WHAT (Quali esiti si generano e quanto contano)</h4>
+                  <span className="tactile-pill bg-[#f7f2e8] text-slate-800 border-[rgba(65,50,30,0.18)] px-2.5 py-1 text-xs font-black shadow-xs">Cat. 1 - 4</span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   Identifica i cambiamenti (positivi o negativi, intenzionali o inattesi) vissuti dallo stakeholder e la loro rilevanza prioritaria:
                 </p>
-                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside font-medium">
                   <li><strong>1. Outcome level in period (i):</strong> Livello di esito registrato nel periodo (Rilevazione survey con domande aperte/scala Likert; Assessment: <code>Positive</code> / <code>Negative</code>).</li>
                   <li><strong>2. Outcome threshold:</strong> Soglia minima affinché l&apos;esito sia considerato positivo (standard nazionali/internazionali o soglia di dignità).</li>
                   <li><strong>3. Importance to stakeholder:</strong> Quanto l&apos;esito è prioritario per chi lo vive rispetto ad altri aspetti della propria vita.</li>
@@ -1307,15 +1353,15 @@ export function ImpactAssessmentPanel() {
               </div>
 
               {/* Dim 2 */}
-              <div className="rounded-xl border border-blue-200 bg-blue-50/30 p-4 space-y-3">
+              <div className="tactile-card rounded-2xl border border-[rgba(65,50,30,0.2)] bg-gradient-to-b from-[#f1ebe0] via-[#e6dbcc] to-[#dccebb] p-5 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-blue-900 text-sm">DIMENSIONE 2: WHO (Chi vive l&apos;esito e quanto è vulnerabile)</h4>
-                  <Badge className="bg-blue-100 text-blue-800">Cat. 5 - 8</Badge>
+                  <h4 className="font-black text-slate-900 text-sm text-engraved">DIMENSIONE 2: WHO (Chi vive l&apos;esito e quanto è vulnerabile)</h4>
+                  <span className="tactile-pill bg-[#f4ece0] text-slate-800 border-[rgba(65,50,30,0.18)] px-2.5 py-1 text-xs font-black shadow-xs">Cat. 5 - 8</span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   Definisce il profilo dei beneficiari e il loro livello di bisogno pre-esistente (*baseline*):
                 </p>
-                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside font-medium">
                   <li><strong>5. Stakeholder:</strong> Segmento coinvolto (Clienti, dipendenti svantaggiati, fornitori etici, pianeta/ambiente).</li>
                   <li><strong>6. Geographical Boundary:</strong> Territorio in cui si manifesta l&apos;impatto (quartieri periferici, comuni rurali, bacino regionale).</li>
                   <li><strong>7. Outcome level at baseline (ii):</strong> Condizione di partenza prima dell&apos;intervento (Assessment: <code>Underserved</code> [sottoservito/vulnerabile] o <code>Well-served</code>).</li>
@@ -1324,15 +1370,15 @@ export function ImpactAssessmentPanel() {
               </div>
 
               {/* Dim 3 */}
-              <div className="rounded-xl border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+              <div className="tactile-card rounded-2xl border border-[rgba(65,50,30,0.2)] bg-gradient-to-b from-[#eee8dc] via-[#e3d9c7] to-[#d7ccb5] p-5 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-purple-900 text-sm">DIMENSIONE 3: HOW MUCH (Entità, profondità e durata del cambiamento)</h4>
-                  <Badge className="bg-purple-100 text-purple-800">Cat. 9 - 11</Badge>
+                  <h4 className="font-black text-slate-900 text-sm text-engraved">DIMENSIONE 3: HOW MUCH (Entità, profondità e durata del cambiamento)</h4>
+                  <span className="tactile-pill bg-[#f0e8d9] text-slate-800 border-[rgba(65,50,30,0.18)] px-2.5 py-1 text-xs font-black shadow-xs">Cat. 9 - 11</span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   Misura la significatività quantitativa, qualitativa e temporale dell&apos;impatto:
                 </p>
-                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside font-medium">
                   <li><strong>9. Scale:</strong> Numero assoluto di persone raggiunte (Assessment: <code>Large scale</code> / <code>Small scale</code>).</li>
                   <li><strong>10. Depth:</strong> Grado di trasformazione, calcolato come delta tra baseline *(Who - ii)* e periodo *(What - i)* (Assessment: <code>Deep change</code> / <code>Marginal change</code>).</li>
                   <li><strong>11. Duration:</strong> Orizzonte temporale di persistenza del beneficio (Assessment: <code>Long term</code> / <code>Short term</code>).</li>
@@ -1340,34 +1386,34 @@ export function ImpactAssessmentPanel() {
               </div>
 
               {/* Dim 4 */}
-              <div className="rounded-xl border border-amber-200 bg-amber-50/30 p-4 space-y-3">
+              <div className="tactile-card rounded-2xl border border-[rgba(65,50,30,0.22)] bg-gradient-to-b from-[#ede5d4] via-[#e0d5c1] to-[#d4c7b0] p-5 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-amber-900 text-sm">DIMENSIONE 4: CONTRIBUTION (Addizionalità rispetto allo scenario controfattuale)</h4>
-                  <Badge className="bg-amber-100 text-amber-800">Cat. 12 - 13</Badge>
+                  <h4 className="font-black text-slate-900 text-sm text-engraved">DIMENSIONE 4: CONTRIBUTION (Addizionalità rispetto allo scenario controfattuale)</h4>
+                  <span className="tactile-pill bg-[#ede3cf] text-slate-800 border-[rgba(65,50,30,0.2)] px-2.5 py-1 text-xs font-black shadow-xs">Cat. 12 - 13</span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   Valuta quanto del cambiamento sarebbe avvenuto comunque, anche senza l&apos;intervento dell&apos;attuatore (evitando il cd. &quot;effetto inerzia&quot;):
                 </p>
-                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside font-medium">
                   <li><strong>12. Depth counterfactual:</strong> Stima della variazione in assenza dell&apos;attività tramite benchmark di mercato o gruppo di controllo (Assessment: <code>Likely better</code> / <code>Likely worse</code>).</li>
                   <li><strong>13. Duration counterfactual:</strong> Stima di quanto a lungo l&apos;esito sarebbe durato comunque in assenza dell&apos;intervento (Assessment: <code>Likely better</code> / <code>Likely worse</code>).</li>
                 </ul>
               </div>
 
               {/* Dim 5 & 9 Risks */}
-              <div className="rounded-xl border border-rose-200 bg-rose-50/30 p-4 space-y-3">
+              <div className="tactile-card rounded-2xl border border-[rgba(65,50,30,0.22)] bg-gradient-to-b from-[#eae0ce] via-[#ddd0bc] to-[#d0c1a8] p-5 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-rose-900 text-sm">DIMENSIONE 5: RISK (I 9 Rischi di Impatto Codificati dall&apos;IMP)</h4>
-                  <Badge className="bg-rose-100 text-rose-800">Cat. 14 - 15</Badge>
+                  <h4 className="font-black text-slate-900 text-sm text-engraved">DIMENSIONE 5: RISK (I 9 Rischi di Impatto Codificati dall&apos;IMP)</h4>
+                  <span className="tactile-pill bg-[#ebdcc9] text-slate-800 border-[rgba(65,50,30,0.2)] px-2.5 py-1 text-xs font-black shadow-xs">Cat. 14 - 15</span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   Analizza la probabilità e la gravità che l&apos;impatto effettivo sia inferiore o contrario rispetto alle attese. I 9 rischi codificati sono:
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
                   {IMP_RISK_TYPES.map((rt) => (
-                    <div key={rt.value} className="rounded-lg bg-white border border-rose-200 p-2 text-xs">
-                      <strong className="text-rose-900 block font-bold">{rt.value}</strong>
-                      <span className="text-[11px] text-slate-600">{rt.desc}</span>
+                    <div key={rt.value} className="tactile-sunken rounded-xl bg-[rgba(255,255,255,0.45)] border border-[rgba(65,50,30,0.15)] p-2.5 text-xs">
+                      <strong className="text-slate-900 block font-bold text-engraved-subtle">{rt.value}</strong>
+                      <span className="text-[11px] text-slate-700 font-medium">{rt.desc}</span>
                     </div>
                   ))}
                 </div>
@@ -1415,39 +1461,42 @@ export function ImpactAssessmentPanel() {
             </p>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-2">
-                <div className="inline-flex items-center gap-1 rounded bg-amber-200 px-2 py-0.5 text-xs font-black text-amber-900">
+              <div className="tactile-card tactile-card-interactive rounded-2xl border border-[rgba(65,50,30,0.22)] bg-gradient-to-b from-[#f2ece0] via-[#e6dcce] to-[#ded5c5] p-5 space-y-2.5 shadow-sm">
+                <div className="tactile-pill inline-flex items-center gap-1 bg-[#f5f0e6] px-3 py-1 text-xs font-black text-amber-700 border border-[rgba(65,50,30,0.18)] shadow-xs">
                   CLASSE A
                 </div>
-                <h4 className="font-bold text-slate-900 text-sm">Act to avoid harm</h4>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <h4 className="font-black text-slate-900 text-sm text-engraved">Act to avoid harm</h4>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   L&apos;organizzazione opera per mitigare i rischi ESG e prevenire impatti negativi su dipendenti, comunità e ambiente.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-sky-300 bg-sky-50 p-4 space-y-2">
-                <div className="inline-flex items-center gap-1 rounded bg-sky-200 px-2 py-0.5 text-xs font-black text-sky-900">
+              <div className="tactile-card tactile-card-interactive rounded-2xl border border-[rgba(65,50,30,0.22)] bg-gradient-to-b from-[#f2ece0] via-[#e6dcce] to-[#ded5c5] p-5 space-y-2.5 shadow-sm">
+                <div className="tactile-pill inline-flex items-center gap-1 bg-[#f5f0e6] px-3 py-1 text-xs font-black text-sky-700 border border-[rgba(65,50,30,0.18)] shadow-xs">
                   CLASSE B
                 </div>
-                <h4 className="font-bold text-slate-900 text-sm">Benefit stakeholders</h4>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <h4 className="font-black text-slate-900 text-sm text-engraved">Benefit stakeholders</h4>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   L&apos;organizzazione genera benefici tangibili e diretti per i propri stakeholder primari migliorandone la qualità della vita.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 space-y-2">
-                <div className="inline-flex items-center gap-1 rounded bg-emerald-200 px-2 py-0.5 text-xs font-black text-emerald-900">
+              <div className="tactile-card tactile-card-interactive rounded-2xl border border-[rgba(65,50,30,0.22)] bg-gradient-to-b from-[#f2ece0] via-[#e6dcce] to-[#ded5c5] p-5 space-y-2.5 shadow-sm">
+                <div className="tactile-pill inline-flex items-center gap-1 bg-[#f5f0e6] px-3 py-1 text-xs font-black text-emerald-700 border border-[rgba(65,50,30,0.18)] shadow-xs">
                   CLASSE C
                 </div>
-                <h4 className="font-bold text-slate-900 text-sm">Contribute to solutions</h4>
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <h4 className="font-black text-slate-900 text-sm text-engraved">Contribute to solutions</h4>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                   L&apos;organizzazione affronta sfide sociali/ambientali complesse a beneficio di popolazioni gravemente sottoservite (alta addizionalità).
                 </p>
               </div>
             </div>
 
-            <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-900">
-              ⚠️ <strong>Regola IMP di Cautela:</strong> Se non esistono dati sufficienti per tutte le 5 dimensioni per tutti gli stakeholder chiave, l&apos;organizzazione non può qualificarsi come &quot;B&quot; o &quot;C&quot; poiché potrebbe generare impatti negativi non rilevati.
+            <div className="tactile-sunken rounded-2xl p-4 text-xs bg-[rgba(65,50,30,0.06)] border border-[rgba(65,50,30,0.18)] text-slate-800 shadow-[inset_1px_1px_3px_rgba(50,40,25,0.12)]">
+              <strong className="text-rose-800 font-black text-engraved-subtle">⚠️ Regola IMP di Cautela: </strong>
+              <span className="font-medium text-slate-700">
+                Se non esistono dati sufficienti per tutte le 5 dimensioni per tutti gli stakeholder chiave, l&apos;organizzazione non può qualificarsi come &quot;B&quot; o &quot;C&quot; poiché potrebbe generare impatti negativi non rilevati.
+              </span>
             </div>
           </Card>
         </div>
@@ -1645,29 +1694,55 @@ export function ImpactAssessmentPanel() {
           </div>
 
           {/* Sostenitore Recommendation Card */}
-          <Card className="p-6 bg-slate-900 text-white space-y-4">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-emerald-400" />
-              <h4 className="text-base font-bold">Parere Conclusivo per {TARGET_SUPPORTER_LABELS[profile.targetSupporter]}</h4>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              La proposta di impatto presentata da <strong>{profile.name}</strong> soddisfa tutti i requisiti di tracciabilità metodologica IMP con analisi multi-fattoriale e presidio dei rischi dichiarati.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3 text-xs">
-              <div className="rounded-lg bg-slate-800/80 p-3 border border-slate-700">
-                <strong className="text-emerald-400 block mb-1">Per la Pubblica Amministrazione</strong>
-                <span>Ammissibilità a contratti a impatto (Social Impact Bond) e co-progettazioni ex art. 55 Codice Terzo Settore.</span>
+          <div className="tactile-card rounded-3xl p-6.5 space-y-4 border border-[rgba(65,50,30,0.22)] bg-gradient-to-b from-[#f2ece0] via-[#e8decb] to-[#ded4bf] shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="tactile-icon-well flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300/60 shadow-xs">
+                <ShieldAlert className="h-5 w-5" />
               </div>
-              <div className="rounded-lg bg-slate-800/80 p-3 border border-slate-700">
-                <strong className="text-sky-400 block mb-1">Per Investitori e Banche</strong>
-                <span>Bancabilità dell&apos;operazione in logica Blended Finance con premi di rendimento legati a KPI certificati.</span>
-              </div>
-              <div className="rounded-lg bg-slate-800/80 p-3 border border-slate-700">
-                <strong className="text-amber-400 block mb-1">Per Fondazioni &amp; Corporate CSR</strong>
-                <span>Piena rendicontabilità ESG (CSRD / ESRS) e massimizzazione del ritorno sociale sull&apos;investimento (SROI).</span>
+              <div>
+                <h4 className="text-base font-black text-slate-900 text-engraved">
+                  Parere Conclusivo per {TARGET_SUPPORTER_LABELS[profile.targetSupporter]}
+                </h4>
+                <p className="text-[11px] font-bold text-slate-600 text-engraved-subtle">
+                  Pre-qualificazione e delibera di sostenibilità
+                </p>
               </div>
             </div>
-          </Card>
+
+            {/* Testo in altissima visibilità con incisione materica e contrasto perfetto */}
+            <div className="tactile-sunken rounded-2xl p-4 bg-[rgba(255,255,255,0.5)] border border-[rgba(65,50,30,0.18)] shadow-[inset_1px_1px_3px_rgba(45,35,20,0.1)]">
+              <p className="text-xs leading-relaxed font-bold text-slate-900 text-engraved">
+                La proposta di impatto presentata da <span className="underline decoration-emerald-600 decoration-2 underline-offset-2 font-black text-slate-950">{profile.name}</span> soddisfa tutti i requisiti di tracciabilità metodologica IMP con analisi multi-fattoriale e presidio dei rischi dichiarati.
+              </p>
+            </div>
+
+            <div className="grid gap-3.5 sm:grid-cols-3 text-xs">
+              <div className="tactile-card rounded-2xl p-4 border border-[rgba(65,50,30,0.18)] bg-gradient-to-b from-[#f7f2e8] to-[#ded5c5] shadow-xs">
+                <strong className="text-emerald-800 block mb-1.5 font-black text-xs tracking-wide text-engraved">
+                  Per la Pubblica Amministrazione
+                </strong>
+                <span className="text-slate-800 leading-relaxed text-[11px] font-semibold text-engraved-subtle">
+                  Ammissibilità a contratti a impatto (Social Impact Bond) e co-progettazioni ex art. 55 Codice Terzo Settore.
+                </span>
+              </div>
+              <div className="tactile-card rounded-2xl p-4 border border-[rgba(65,50,30,0.18)] bg-gradient-to-b from-[#f7f2e8] to-[#ded5c5] shadow-xs">
+                <strong className="text-sky-800 block mb-1.5 font-black text-xs tracking-wide text-engraved">
+                  Per Investitori e Banche
+                </strong>
+                <span className="text-slate-800 leading-relaxed text-[11px] font-semibold text-engraved-subtle">
+                  Bancabilità dell&apos;operazione in logica Blended Finance con premi di rendimento legati a KPI certificati.
+                </span>
+              </div>
+              <div className="tactile-card rounded-2xl p-4 border border-[rgba(65,50,30,0.18)] bg-gradient-to-b from-[#f7f2e8] to-[#ded5c5] shadow-xs">
+                <strong className="text-amber-800 block mb-1.5 font-black text-xs tracking-wide text-engraved">
+                  Per Fondazioni &amp; Corporate CSR
+                </strong>
+                <span className="text-slate-800 leading-relaxed text-[11px] font-semibold text-engraved-subtle">
+                  Piena rendicontabilità ESG (CSRD / ESRS) e massimizzazione del ritorno sociale sull&apos;investimento (SROI).
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1677,24 +1752,24 @@ export function ImpactAssessmentPanel() {
       {showCloneModal && (
         <Modal title="Aggiungi / Clona Assessment per un Attuatore" onClose={() => setShowCloneModal(false)} wide>
           <div className="space-y-4 text-xs">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
-              <p className="text-xs text-emerald-900 leading-relaxed">
-                <strong>Clonazione Strutturata:</strong> Questa operazione crea una nuova istanza distinta nel sistema, con un proprio codice univoco, pronta per essere personalizzata per qualsiasi attuatore (impresa sociale, non profit, startup) e per i rispettivi sostenitori.
+            <div className="tactile-sunken rounded-2xl border border-[rgba(65,50,30,0.18)] bg-[rgba(65,50,30,0.05)] p-3.5 shadow-[inset_1px_1px_3px_rgba(45,35,20,0.12)]">
+              <p className="text-xs text-slate-800 leading-relaxed font-medium">
+                <strong className="text-emerald-900 font-bold">Clonazione Strutturata:</strong> Questa operazione crea una nuova istanza distinta nel sistema, con un proprio codice univoco, pronta per essere personalizzata per qualsiasi attuatore (impresa sociale, non profit, startup) e per i rispettivi sostenitori.
               </p>
             </div>
 
             {/* Modalità di clonazione */}
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block font-black text-slate-800 uppercase tracking-wider mb-2 text-engraved-subtle text-[11px]">
                 Modalità di Creazione
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label
                   className={cn(
-                    "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 transition",
+                    "flex cursor-pointer items-center gap-3 rounded-2xl p-3.5 transition-all select-none",
                     cloneMode === "COPY_CURRENT"
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-200"
-                      : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                      ? "tactile-sunken border-2 border-emerald-600/50 bg-[rgba(65,50,30,0.08)] shadow-[inset_1.5px_1.5px_4px_rgba(45,35,20,0.18)] text-slate-900"
+                      : "tactile-card border border-[rgba(65,50,30,0.2)] bg-gradient-to-b from-[#f5efe4] to-[#ded4c1] text-slate-700 hover:brightness-[0.98]"
                   )}
                 >
                   <input
@@ -1702,20 +1777,20 @@ export function ImpactAssessmentPanel() {
                     name="cloneMode"
                     checked={cloneMode === "COPY_CURRENT"}
                     onChange={() => setCloneMode("COPY_CURRENT")}
-                    className="text-emerald-600"
+                    className="accent-emerald-600 h-4 w-4"
                   />
                   <div>
-                    <div>Clona Matrice Corrente</div>
-                    <div className="text-[11px] font-normal text-slate-500">Copia tutti gli impatti, righe e dati dell&apos;assessment attivo</div>
+                    <div className="font-bold text-slate-900 text-engraved">Clona Matrice Corrente</div>
+                    <div className="text-[11px] font-medium text-slate-600">Copia tutti gli impatti, righe e dati dell&apos;assessment attivo</div>
                   </div>
                 </label>
 
                 <label
                   className={cn(
-                    "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 transition",
+                    "flex cursor-pointer items-center gap-3 rounded-2xl p-3.5 transition-all select-none",
                     cloneMode === "BLANK_TEMPLATE"
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-200"
-                      : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                      ? "tactile-sunken border-2 border-emerald-600/50 bg-[rgba(65,50,30,0.08)] shadow-[inset_1.5px_1.5px_4px_rgba(45,35,20,0.18)] text-slate-900"
+                      : "tactile-card border border-[rgba(65,50,30,0.2)] bg-gradient-to-b from-[#f5efe4] to-[#ded4c1] text-slate-700 hover:brightness-[0.98]"
                   )}
                 >
                   <input
@@ -1723,11 +1798,11 @@ export function ImpactAssessmentPanel() {
                     name="cloneMode"
                     checked={cloneMode === "BLANK_TEMPLATE"}
                     onChange={() => setCloneMode("BLANK_TEMPLATE")}
-                    className="text-emerald-600"
+                    className="accent-emerald-600 h-4 w-4"
                   />
                   <div>
-                    <div>Nuovo da Template IMP</div>
-                    <div className="text-[11px] font-normal text-slate-500">Inizializza con i 2 impatti standard vuoti</div>
+                    <div className="font-bold text-slate-900 text-engraved">Nuovo da Template IMP</div>
+                    <div className="text-[11px] font-medium text-slate-600">Inizializza con i 2 impatti standard vuoti</div>
                   </div>
                 </label>
               </div>
@@ -1735,7 +1810,7 @@ export function ImpactAssessmentPanel() {
 
             {/* Titolo distintivo */}
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                 Titolo Distintivo dell&apos;Assessment <span className="text-rose-500">*</span>
               </label>
               <input
@@ -1743,14 +1818,14 @@ export function ImpactAssessmentPanel() {
                 value={cloneFormTitle}
                 onChange={(e) => setCloneFormTitle(e.target.value)}
                 placeholder="Es. Valutazione Bando Welfare 2026 · Cooperativa Rinascita"
-                className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                className="tactile-input w-full p-2.5 text-xs font-bold text-slate-900"
               />
-              <span className="text-[11px] text-slate-500">Questo titolo permetterà di distinguere chiaramente la valutazione dalle altre nel database.</span>
+              <span className="text-[11px] text-slate-600 font-medium mt-1 block">Questo titolo permetterà di distinguere chiaramente la valutazione dalle altre nel database.</span>
             </div>
 
             {/* Denominazione Attuatore */}
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                 Denominazione Soggetto Attuatore
               </label>
               <input
@@ -1758,19 +1833,19 @@ export function ImpactAssessmentPanel() {
                 value={cloneFormAttuatorName}
                 onChange={(e) => setCloneFormAttuatorName(e.target.value)}
                 placeholder="Es. Cooperativa Sociale Rinascita ETS"
-                className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200"
+                className="tactile-input w-full p-2.5 text-xs font-bold text-slate-900"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Tipologia Soggetto Attuatore
                 </label>
                 <select
                   value={cloneFormType}
                   onChange={(e) => setCloneFormType(e.target.value as AttuatorType)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
+                  className="tactile-input w-full p-2 text-xs font-bold text-slate-900"
                 >
                   <option value="IMPRESA_SOCIALE">Impresa Sociale (D.Lgs. 112/2017)</option>
                   <option value="STARTUP_INNOVATIVA_IMPATTO">Startup Innovativa a Vocazione Sociale</option>
@@ -1781,13 +1856,13 @@ export function ImpactAssessmentPanel() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Sostenitore Target Primario
                 </label>
                 <select
                   value={cloneFormTargetSupporter}
                   onChange={(e) => setCloneFormTargetSupporter(e.target.value as TargetSupporterType)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
+                  className="tactile-input w-full p-2 text-xs font-bold text-slate-900"
                 >
                   <option value="PA_PUBBLICA_AMMINISTRAZIONE">Pubblica Amministrazione (Bandi, Co-progettazione)</option>
                   <option value="IMPACT_INVESTOR">Investitore ad Impatto (Venture Philanthropy, ESG)</option>
@@ -1799,7 +1874,7 @@ export function ImpactAssessmentPanel() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Settore di Intervento
                 </label>
                 <input
@@ -1807,12 +1882,12 @@ export function ImpactAssessmentPanel() {
                   value={cloneFormSector}
                   onChange={(e) => setCloneFormSector(e.target.value)}
                   placeholder="Es. Inclusione socio-lavorativa, rigenerazione urbana..."
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
+                  className="tactile-input w-full p-2.5 text-xs text-slate-900 font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Ambito Territoriale
                 </label>
                 <input
@@ -1820,21 +1895,21 @@ export function ImpactAssessmentPanel() {
                   value={cloneFormTerritory}
                   onChange={(e) => setCloneFormTerritory(e.target.value)}
                   placeholder="Es. Regione Campania / Comune di Napoli"
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
+                  className="tactile-input w-full p-2.5 text-xs text-slate-900 font-semibold"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <div className="flex justify-end gap-3 pt-3 border-t border-[rgba(65,50,30,0.15)]">
               <button
                 onClick={() => setShowCloneModal(false)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="tactile-btn-secondary px-4 py-2 text-xs font-bold text-slate-800 rounded-xl"
               >
                 Annulla
               </button>
               <button
                 onClick={handleConfirmClone}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-emerald-700"
+                className="tactile-btn-primary px-5 py-2 text-xs font-bold rounded-xl"
               >
                 Crea e Attiva Assessment
               </button>
@@ -1850,7 +1925,7 @@ export function ImpactAssessmentPanel() {
         <Modal title="Modifica Titolo &amp; Profilo Attuatore" onClose={() => setShowProfileModal(false)} wide>
           <div className="space-y-4 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                 Titolo Distintivo Assessment
               </label>
               <input
@@ -1862,31 +1937,31 @@ export function ImpactAssessmentPanel() {
                   );
                   saveToStorage(updatedList);
                 }}
-                className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900"
+                className="tactile-input w-full p-2.5 text-xs font-bold text-slate-900"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                 Denominazione Attuatore
               </label>
               <input
                 type="text"
                 value={profile.name}
                 onChange={(e) => updateCurrentProfile({ ...profile, name: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 p-2.5 text-sm font-semibold text-slate-900"
+                className="tactile-input w-full p-2.5 text-xs font-bold text-slate-900"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Tipologia Soggetto Attuatore
                 </label>
                 <select
                   value={profile.type}
                   onChange={(e) => updateCurrentProfile({ ...profile, type: e.target.value as any })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
+                  className="tactile-input w-full p-2 text-xs font-bold text-slate-900"
                 >
                   <option value="IMPRESA_SOCIALE">Impresa Sociale (D.Lgs. 112/2017)</option>
                   <option value="STARTUP_INNOVATIVA_IMPATTO">Startup Innovativa a Vocazione Sociale</option>
@@ -1897,13 +1972,13 @@ export function ImpactAssessmentPanel() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Sostenitore Target di Riferimento
                 </label>
                 <select
                   value={profile.targetSupporter}
                   onChange={(e) => updateCurrentProfile({ ...profile, targetSupporter: e.target.value as any })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800"
+                  className="tactile-input w-full p-2 text-xs font-bold text-slate-900"
                 >
                   <option value="PA_PUBBLICA_AMMINISTRAZIONE">Pubblica Amministrazione (Bandi, Co-progettazione)</option>
                   <option value="IMPACT_INVESTOR">Investitore ad Impatto (Venture Philanthropy, ESG)</option>
@@ -1915,50 +1990,50 @@ export function ImpactAssessmentPanel() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Settore di Intervento
                 </label>
                 <input
                   type="text"
                   value={profile.sector}
                   onChange={(e) => updateCurrentProfile({ ...profile, sector: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
+                  className="tactile-input w-full p-2.5 text-xs text-slate-900 font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                   Ambito Territoriale
                 </label>
                 <input
                   type="text"
                   value={profile.territory}
                   onChange={(e) => updateCurrentProfile({ ...profile, territory: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
+                  className="tactile-input w-full p-2.5 text-xs text-slate-900 font-semibold"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                 Missione e Sintesi del Valore Sociale/Ambientale
               </label>
               <textarea
                 rows={3}
                 value={profile.mission}
                 onChange={(e) => updateCurrentProfile({ ...profile, mission: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800"
+                className="tactile-input w-full p-2.5 text-xs text-slate-900 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block font-black text-slate-800 uppercase tracking-wider mb-1 text-engraved-subtle text-[11px]">
                 Classificazione Complessiva Organizzazione
               </label>
               <select
                 value={profile.overallClassification}
                 onChange={(e) => updateCurrentProfile({ ...profile, overallClassification: e.target.value as ImpactClassification })}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-bold text-slate-800"
+                className="tactile-input w-full p-2 text-xs font-bold text-slate-900"
               >
                 <option value="ACT_TO_AVOID_HARM">Classe A · Agire per evitare danni (Act to avoid harm)</option>
                 <option value="BENEFIT_STAKEHOLDERS">Classe B · Generare benefici per gli stakeholder (Benefit stakeholders)</option>
@@ -1966,10 +2041,10 @@ export function ImpactAssessmentPanel() {
               </select>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <div className="flex justify-end gap-3 pt-3 border-t border-[rgba(65,50,30,0.15)]">
               <button
                 onClick={() => setShowProfileModal(false)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="tactile-btn-secondary px-4 py-2 text-xs font-bold text-slate-800 rounded-xl"
               >
                 Chiudi
               </button>
@@ -1978,7 +2053,7 @@ export function ImpactAssessmentPanel() {
                   setShowProfileModal(false);
                   triggerNotification("Dati assessment aggiornati!");
                 }}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+                className="tactile-btn-primary px-5 py-2 text-xs font-bold rounded-xl"
               >
                 Salva Modifiche
               </button>

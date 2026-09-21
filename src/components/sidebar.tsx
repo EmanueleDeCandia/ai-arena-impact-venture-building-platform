@@ -29,20 +29,24 @@ export function Sidebar() {
   const { user } = useRole();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-slate-800 bg-slate-950 text-slate-300">
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 shadow-lg shadow-emerald-900/40">
-          <Sparkles className="h-5 w-5 text-slate-950" />
+    <aside className="tactile-sidebar sticky top-0 flex h-screen w-64 shrink-0 flex-col">
+      {/* Brand Header */}
+      <div className="flex items-center gap-3 px-5 py-6">
+        <div className="tactile-icon-well flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-700 text-slate-950 shadow-md">
+          <Sparkles className="h-5 w-5 fill-slate-950/20 text-slate-950" />
         </div>
         <div>
-          <div className="text-sm font-black tracking-widest text-white">IMPACT FORGE</div>
-          <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-400">
+          <div className="text-engraved text-base font-black tracking-widest text-slate-900">
+            IMPACT FORGE
+          </div>
+          <div className="text-engraved-subtle text-[10px] font-black uppercase tracking-wider text-emerald-800">
             Venture Building OS
           </div>
         </div>
       </div>
 
-      <nav className="mt-2 flex-1 space-y-1 px-3">
+      {/* Navigation list */}
+      <nav className="mt-2 flex-1 space-y-2 px-3.5">
         {NAV.filter((item) => hasPerm(user.role, item.perm)).map((item) => {
           const active =
             item.href === "/dashboard"
@@ -53,28 +57,40 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
+                "tactile-nav-item flex items-center gap-3.5 px-4 py-3 text-sm transition-all",
                 active
-                  ? "bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/30"
-                  : "text-slate-400 hover:bg-slate-900 hover:text-slate-200"
+                  ? "tactile-nav-active font-black text-emerald-950"
+                  : "tactile-nav-inactive font-bold text-slate-700 hover:text-slate-900"
               )}
             >
-              <item.icon className="h-4.5 w-4.5" />
-              {item.label}
+              <item.icon
+                className={cn(
+                  "h-5 w-5 transition-transform",
+                  active ? "text-emerald-800 scale-105" : "text-slate-500"
+                )}
+              />
+              <span className={active ? "text-engraved-emerald" : "text-engraved"}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="space-y-3 px-5 py-5 text-[11px] text-slate-500">
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-          <div className="mb-1 font-bold text-slate-300">5 livelli funzionali</div>
-          <p>Presentation · Orchestration · Intelligence · Financial Structuring · Trust &amp; Compliance</p>
+      {/* Footer Info Pod */}
+      <div className="space-y-3 px-4 py-5 text-[11px]">
+        <div className="tactile-sunken rounded-2xl p-3.5">
+          <div className="text-engraved mb-1 font-black text-slate-900">
+            5 livelli funzionali
+          </div>
+          <p className="text-engraved-subtle text-[10px] font-semibold leading-relaxed text-slate-600">
+            Presentation · Orchestration · Intelligence · Financial Structuring · Trust &amp; Compliance
+          </p>
         </div>
-        <div className="flex items-center justify-between">
-          <span>v1.0 · MVP Fasi 1-4</span>
-          <span className="flex items-center gap-1 text-emerald-400">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+        <div className="flex items-center justify-between px-1">
+          <span className="text-engraved-subtle font-bold text-slate-600">v1.0 · MVP Fasi 1-4</span>
+          <span className="tactile-pill flex items-center gap-1.5 border-emerald-500/30 bg-gradient-to-b from-emerald-50 to-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-600 shadow-sm shadow-emerald-500" />
             live
           </span>
         </div>

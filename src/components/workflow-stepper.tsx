@@ -56,16 +56,18 @@ export function WorkflowStepper({ project }: { project: ProjectDTO }) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="tactile-card p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Workflow — State Machine</h3>
-            <Badge className="border-slate-200 bg-slate-100 text-slate-600 text-[10px]">
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-engraved text-sm font-black uppercase tracking-wider text-slate-700">
+              Workflow — State Machine
+            </h3>
+            <Badge className="border-slate-300 bg-white font-black text-slate-700">
               Fase {current + 1} di {WORKFLOW.length}
             </Badge>
           </div>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <p className="text-engraved-subtle mt-0.5 text-xs font-medium text-slate-500">
             Opportunity → Foundry → Co-Design → Struttura → Underwriting → Funding → Execution → MRV → Exit
           </p>
         </div>
@@ -73,7 +75,7 @@ export function WorkflowStepper({ project }: { project: ProjectDTO }) {
         {next && (
           <div className="flex items-center gap-2">
             {!canAdvance && (
-              <span className="text-[11px] text-amber-600">
+              <span className="text-engraved-subtle text-[11px] font-bold text-amber-700">
                 🔒 Accesso sola lettura ({user.role})
               </span>
             )}
@@ -81,7 +83,7 @@ export function WorkflowStepper({ project }: { project: ProjectDTO }) {
               className={cn(
                 btnPrimary,
                 !allPassed && !canAdvance && "bg-slate-400 hover:bg-slate-400 cursor-not-allowed",
-                !allPassed && canAdvance && "bg-amber-600 hover:bg-amber-700"
+                !allPassed && canAdvance && "bg-gradient-to-b from-amber-500 to-amber-600 border-amber-700 hover:from-amber-400 hover:to-amber-500"
               )}
               onClick={() => setOpen(true)}
               title={
@@ -93,18 +95,18 @@ export function WorkflowStepper({ project }: { project: ProjectDTO }) {
               }
             >
               {allPassed ? (
-                <Unlock className="h-4 w-4 text-emerald-300" />
+                <Unlock className="h-4 w-4 text-emerald-200 filter drop-shadow-sm" />
               ) : (
-                <Lock className="h-4 w-4 text-amber-200" />
+                <Lock className="h-4 w-4 text-amber-200 filter drop-shadow-sm" />
               )}
-              Avanza a {STATUS_LABEL[next]}
+              <span>Avanza a {STATUS_LABEL[next]}</span>
             </button>
           </div>
         )}
       </div>
 
       {/* Workflow steps visual bar */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+      <div className="tactile-sunken flex items-center gap-1.5 overflow-x-auto rounded-2xl p-2 pb-2">
         {WORKFLOW.map((w, i) => {
           const doneStep = i < current;
           const active = i === current;
@@ -112,50 +114,56 @@ export function WorkflowStepper({ project }: { project: ProjectDTO }) {
             <div key={w.key} className="flex shrink-0 items-center">
               <div
                 className={cn(
-                  "flex flex-col items-center rounded-lg border px-2.5 py-2 transition-all",
+                  "flex flex-col items-center rounded-xl px-3 py-2 transition-all",
                   active
-                    ? "border-emerald-500 bg-emerald-50 shadow-sm ring-1 ring-emerald-200"
+                    ? "tactile-card border-emerald-500/40 bg-gradient-to-b from-emerald-50 to-teal-100/90 shadow-md ring-2 ring-emerald-400/40"
                     : doneStep
-                    ? "border-slate-200 bg-white"
-                    : "border-slate-100 bg-slate-50 opacity-60"
+                    ? "tactile-card border-white/90 bg-white"
+                    : "border border-slate-200/40 bg-slate-100/60 opacity-60"
                 )}
                 title={w.label}
               >
                 <span
                   className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold",
+                    "tactile-icon-well flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black",
                     doneStep
                       ? "bg-emerald-500 text-white"
                       : active
-                      ? "bg-emerald-600 text-white ring-2 ring-emerald-200"
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm ring-2 ring-emerald-300"
                       : "bg-slate-200 text-slate-500"
                   )}
                 >
                   {doneStep ? "✓" : i + 1}
                 </span>
-                <span className="mt-1 text-[10px] font-bold text-slate-700">{w.short}</span>
+                <span className="text-engraved mt-1 text-[10px] font-black text-slate-800">{w.short}</span>
               </div>
-              {i < WORKFLOW.length - 1 && <ArrowRight className="mx-0.5 h-3 w-3 shrink-0 text-slate-300" />}
+              {i < WORKFLOW.length - 1 && <ArrowRight className="mx-1 h-3 w-3 shrink-0 text-slate-400" />}
             </div>
           );
         })}
       </div>
 
       {/* Real-time Checklist Chips with quick guidance */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Criteri Transizione:</span>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="text-engraved-subtle text-[11px] font-black uppercase tracking-wider text-slate-500">
+          Criteri Transizione:
+        </span>
         {checks.map((c) => (
           <span
             key={c.label}
             className={cn(
-              "flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+              "tactile-pill flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all",
               c.passed
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-amber-200 bg-amber-50 text-amber-800"
+                ? "border-emerald-400/30 bg-gradient-to-b from-emerald-50 to-emerald-100 text-emerald-800"
+                : "border-amber-400/30 bg-gradient-to-b from-amber-50 to-amber-100 text-amber-900"
             )}
             title={c.hint}
           >
-            {c.passed ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> : <span className="text-amber-600 font-bold">⏳</span>}
+            {c.passed ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <span className="text-amber-700 font-bold">⏳</span>
+            )}
             {c.label}
           </span>
         ))}

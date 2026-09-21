@@ -105,26 +105,26 @@ export function AgentConsole({
               </button>
 
               {res && (
-                <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-                  <div className="text-xs font-bold text-slate-700">{res.title}</div>
-                  <p className="text-xs text-slate-600">{res.summary}</p>
-                  <div className="max-h-52 space-y-1.5 overflow-y-auto">
+                <div className="mt-3 space-y-2 border-t border-[rgba(65,50,30,0.14)] pt-3">
+                  <div className="text-xs font-black text-slate-900 text-engraved">{res.title}</div>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium">{res.summary}</p>
+                  <div className="max-h-52 space-y-2 overflow-y-auto no-scrollbar pr-0.5">
                     {res.steps.map((st, i) => (
-                      <div key={i} className="rounded-md bg-slate-50 px-2.5 py-1.5">
-                        <div className="text-[11px] leading-relaxed text-slate-600">{st.text}</div>
-                        <div className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-500">📚 {st.source}</div>
+                      <div key={i} className="tactile-sunken rounded-xl bg-[rgba(255,255,255,0.5)] border border-[rgba(65,50,30,0.14)] px-3 py-2 shadow-[inset_1px_1px_2px_rgba(45,35,20,0.08)]">
+                        <div className="text-[11px] leading-relaxed font-semibold text-slate-800 text-engraved-subtle">{st.text}</div>
+                        <div className="mt-1 text-[9px] font-bold uppercase tracking-wide text-violet-700">📚 {st.source}</div>
                       </div>
                     ))}
                   </div>
                   {a.key === "structurer" && structurerPayload && (
-                    <div className="space-y-1">
+                    <div className="space-y-1 pt-1">
                       {structurerPayload.map((t, i) => (
-                        <div key={i} className="flex items-center justify-between rounded-md border border-slate-100 px-2 py-1">
+                        <div key={i} className="tactile-card flex items-center justify-between rounded-xl border border-[rgba(65,50,30,0.15)] bg-gradient-to-b from-[#f7f2e8] to-[#ded5c5] px-2.5 py-1.5 shadow-xs">
                           <div className="flex items-center gap-1.5">
                             <span className={cn("h-2 w-2 rounded-full", INSTRUMENT_META[t.instrument]?.bar ?? "bg-slate-300")} />
-                            <span className="text-[11px] font-semibold text-slate-700">{t.label}</span>
+                            <span className="text-[11px] font-bold text-slate-800">{t.label}</span>
                           </div>
-                          <Badge className="border-slate-200 bg-white text-slate-500">{fmtEURCompact(t.amount)}</Badge>
+                          <Badge className="border-[rgba(65,50,30,0.15)] bg-white/80 text-slate-700 font-bold">{fmtEURCompact(t.amount)}</Badge>
                         </div>
                       ))}
                     </div>

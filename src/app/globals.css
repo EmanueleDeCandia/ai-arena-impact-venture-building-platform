@@ -1,1 +1,381 @@
 @import "tailwindcss";
+
+/* ==========================================================================
+   IMPACT FORGE — 3D CLAYMORPHIC & TACTILE DESIGN SYSTEM
+   Ispirato al render tattile:
+   - Spessori in risalto con smusso, luce d'angolo e ombre morbide
+   - Scritte e cifre scavate (letterpress / debossed) direttamente nella materia
+   - Superfici materiche argilla/pietra calda e pozzetti scavati
+   - Eliminazione barre di scorrimento laterali (scorrimento puramente fluido)
+   ========================================================================== */
+
+:root {
+  --canvas-base: #dfd7c5;
+  --card-top: #eae3d3;
+  --card-mid: #ddd3bf;
+  --card-bottom: #d2c7b1;
+  --sunken-base: #c7bea9;
+}
+
+/* ==========================================================================
+   ELIMINAZIONE BARRE DI SCORRIMENTO (Lo scorrimento avviene solo con scrolling)
+   ========================================================================== */
+
+html, body, *, *::before, *::after {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+}
+
+/* Sfondo della pagina con trama a micro-griglia fisica */
+.tactile-canvas {
+  background-color: #dfd7c5;
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.45) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(180, 165, 140, 0.4) 0%, transparent 50%),
+    radial-gradient(rgba(50, 40, 25, 0.11) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 16px 16px;
+  color: #24201b;
+}
+
+/* ==========================================================================
+   1. SCHEDE E CONTENITORI IN RISALTO (Estrusione 3D con smusso e ombra)
+   ========================================================================== */
+
+.tactile-card {
+  background: linear-gradient(172deg, #eae3d3 0%, #dfd5c1 55%, #d5caa6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-bottom: 2.5px solid rgba(45, 35, 20, 0.26);
+  border-right: 1.5px solid rgba(45, 35, 20, 0.18);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 3px 6px -1px rgba(45, 35, 20, 0.1),
+    0 12px 24px -3px rgba(45, 35, 20, 0.18),
+    0 22px 42px -6px rgba(45, 35, 20, 0.14),
+    inset 1.5px 1.5px 1.5px 0 rgba(255, 255, 255, 0.9),
+    inset -2px -2px 3px 0 rgba(45, 35, 20, 0.12);
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tactile-card-raised {
+  background: linear-gradient(172deg, #eee8d8 0%, #e3d9c5 50%, #d8cdb8 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-bottom: 3.5px solid rgba(45, 35, 20, 0.3);
+  border-right: 2px solid rgba(45, 35, 20, 0.22);
+  border-radius: 1.75rem;
+  box-shadow:
+    0 4px 8px 0 rgba(45, 35, 20, 0.12),
+    0 16px 32px -4px rgba(45, 35, 20, 0.22),
+    0 28px 56px -8px rgba(45, 35, 20, 0.18),
+    inset 2px 2px 2px 0 rgba(255, 255, 255, 0.95),
+    inset -2.5px -2.5px 4px 0 rgba(45, 35, 20, 0.15);
+}
+
+.tactile-card-interactive:hover {
+  transform: translateY(-2.5px);
+  box-shadow:
+    0 6px 12px 0 rgba(45, 35, 20, 0.14),
+    0 18px 32px -2px rgba(45, 35, 20, 0.24),
+    0 30px 54px -6px rgba(45, 35, 20, 0.18),
+    inset 1.5px 1.5px 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset -2px -2px 3px 0 rgba(45, 35, 20, 0.12);
+}
+
+/* Pozzetto / pillola in rilievo per icone */
+.tactile-icon-well {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-bottom: 2px solid rgba(45, 35, 20, 0.24);
+  box-shadow:
+    0 3px 8px -1px rgba(45, 35, 20, 0.15),
+    0 1px 3px 0 rgba(45, 35, 20, 0.1),
+    inset 1.5px 1.5px 1px 0 rgba(255, 255, 255, 0.95),
+    inset -1.5px -1.5px 2px 0 rgba(45, 35, 20, 0.12);
+}
+
+/* Badge a pillola in risalto tridimensionale */
+.tactile-pill {
+  background: linear-gradient(180deg, #eee8da 0%, #ded3be 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-bottom: 1.5px solid rgba(45, 35, 20, 0.22);
+  border-radius: 9999px;
+  box-shadow:
+    0 3px 6px -1px rgba(45, 35, 20, 0.14),
+    0 1px 2px 0 rgba(45, 35, 20, 0.08),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 2px 0 rgba(45, 35, 20, 0.1);
+  color: #2b251f;
+}
+
+/* ==========================================================================
+   2. SPESSORI SCAVATI (Debossed / Letterpress per Scritte e Numeri)
+   ========================================================================== */
+
+/* Cifre metriche grandi (es: 4, 128, 86%, 12 nel render) incise nella materia */
+.text-engraved-strong {
+  color: #1f1b16;
+  text-shadow:
+    0 -1.5px 1.5px rgba(20, 15, 10, 0.65),
+    0 1px 1px rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.025em;
+  font-weight: 900;
+}
+
+/* Titoli di sezione, intestazioni delle schede */
+.text-engraved {
+  color: #2d261e;
+  text-shadow:
+    0 -1px 1px rgba(20, 15, 10, 0.5),
+    0 1px 1px rgba(255, 255, 255, 0.9);
+  font-weight: 800;
+}
+
+/* Sottotitoli, etichette e metadati scavati */
+.text-engraved-subtle {
+  color: #635848;
+  text-shadow:
+    0 -0.5px 0.5px rgba(20, 15, 10, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+/* Scritta scavata con tonalità verde smeraldo/impatto */
+.text-engraved-emerald {
+  color: #065f46;
+  text-shadow:
+    0 -1.5px 1.5px rgba(4, 78, 59, 0.7),
+    0 1px 1px rgba(255, 255, 255, 0.95);
+  font-weight: 900;
+}
+
+/* Scritta scavata con tonalità ambra/arancione terracotta */
+.text-engraved-amber {
+  color: #92400e;
+  text-shadow:
+    0 -1.5px 1.5px rgba(120, 53, 15, 0.7),
+    0 1px 1px rgba(255, 255, 255, 0.95);
+  font-weight: 900;
+}
+
+/* Scritta scavata con tonalità viola/sroi */
+.text-engraved-violet {
+  color: #5b21b6;
+  text-shadow:
+    0 -1.5px 1.5px rgba(76, 29, 149, 0.7),
+    0 1px 1px rgba(255, 255, 255, 0.95);
+  font-weight: 900;
+}
+
+/* Scritta scavata con tonalità sky/funding */
+.text-engraved-sky {
+  color: #075985;
+  text-shadow:
+    0 -1.5px 1.5px rgba(12, 74, 110, 0.7),
+    0 1px 1px rgba(255, 255, 255, 0.95);
+  font-weight: 900;
+}
+
+/* ==========================================================================
+   3. ELEMENTI SCAVATI NEL PIANO (Pozzetti, Tracce barre e Input)
+   ========================================================================== */
+
+.tactile-sunken {
+  background: linear-gradient(180deg, #c7bfa9 0%, #d6ceba 100%);
+  border: 1px solid rgba(45, 35, 20, 0.2);
+  border-top-color: rgba(30, 20, 10, 0.38);
+  box-shadow:
+    inset 0 3px 6px 0 rgba(30, 20, 10, 0.28),
+    inset 0 1px 2px 0 rgba(30, 20, 10, 0.2),
+    0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Traccia per barre scavata a fondo nella scheda */
+.tactile-progress-track {
+  background: linear-gradient(180deg, #c4bba3 0%, #d2c8b2 100%);
+  border: 1px solid rgba(45, 35, 20, 0.22);
+  border-top-color: rgba(30, 20, 10, 0.4);
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 3px 5px 0 rgba(30, 20, 10, 0.32),
+    inset 0 1px 2px 0 rgba(30, 20, 10, 0.22),
+    0 1px 0 0 rgba(255, 255, 255, 0.95);
+  padding: 2.5px;
+}
+
+.tactile-progress-fill {
+  border-radius: 9999px;
+  box-shadow:
+    0 2px 4px 0 rgba(0, 0, 0, 0.25),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   CAMPI INPUT E TEXTAREA TATTILI (Spessore scavato ad incavatura materica)
+   ========================================================================== */
+
+.tactile-input,
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]),
+textarea,
+select {
+  background: linear-gradient(180deg, #d5ccba 0%, #e3dac8 100%) !important;
+  border: 1px solid rgba(45, 35, 20, 0.28) !important;
+  border-top: 1.5px solid rgba(25, 18, 10, 0.44) !important;
+  border-left: 1.2px solid rgba(30, 22, 12, 0.35) !important;
+  border-radius: 0.95rem;
+  box-shadow:
+    inset 0 3px 6px 0 rgba(25, 18, 10, 0.28),
+    inset 0 1px 2px 0 rgba(25, 18, 10, 0.2),
+    0 1px 0 0 rgba(255, 255, 255, 0.95) !important;
+  color: #1a1612 !important;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.tactile-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):focus,
+textarea:focus,
+select:focus {
+  background: #fdfbf7 !important;
+  border-color: #059669 !important;
+  box-shadow:
+    0 0 0 3.5px rgba(5, 150, 105, 0.28),
+    inset 0 1.5px 2px 0 rgba(20, 15, 10, 0.12),
+    0 1px 0 0 rgba(255, 255, 255, 0.95) !important;
+  outline: none;
+}
+
+/* ==========================================================================
+   4. TASTI TATTILI (Con spessore ed estrusione reattiva)
+   ========================================================================== */
+
+.tactile-btn-primary {
+  background: linear-gradient(180deg, #10b981 0%, #059669 50%, #047857 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-bottom: 3px solid #064e3b;
+  border-right: 1.5px solid #065f46;
+  border-radius: 1.1rem;
+  box-shadow:
+    0 5px 12px -1px rgba(5, 150, 105, 0.45),
+    0 2px 5px -1px rgba(5, 150, 105, 0.3),
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 2px 0 rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  text-shadow: 0 -1px 1px rgba(6, 78, 59, 0.8);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tactile-btn-primary:hover {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 50%, #059669 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 7px 16px -1px rgba(5, 150, 105, 0.5),
+    0 3px 8px -1px rgba(5, 150, 105, 0.35),
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.65);
+}
+
+.tactile-btn-primary:active {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+  box-shadow:
+    0 1px 3px 0 rgba(5, 150, 105, 0.3),
+    inset 0 3px 6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.tactile-btn-secondary {
+  background: linear-gradient(180deg, #f2ece0 0%, #e2d8c3 55%, #d4caa8 100%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-bottom: 2.5px solid rgba(45, 35, 20, 0.28);
+  border-right: 1.5px solid rgba(45, 35, 20, 0.18);
+  border-radius: 1.1rem;
+  box-shadow:
+    0 4px 10px -1px rgba(45, 35, 20, 0.16),
+    0 2px 4px 0 rgba(45, 35, 20, 0.1),
+    inset 0 2px 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 2px 0 rgba(45, 35, 20, 0.12);
+  color: #24201b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tactile-btn-secondary:hover {
+  background: linear-gradient(180deg, #f8f4ec 0%, #eae0cd 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 14px -1px rgba(45, 35, 20, 0.2),
+    0 3px 6px 0 rgba(45, 35, 20, 0.14);
+}
+
+.tactile-btn-secondary:active {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+  box-shadow:
+    0 1px 2px 0 rgba(45, 35, 20, 0.12),
+    inset 0 3px 5px 0 rgba(45, 35, 20, 0.2);
+}
+
+.tactile-btn-ghost {
+  border-radius: 1rem;
+  transition: all 0.15s ease;
+}
+
+.tactile-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 2px 6px -1px rgba(45, 35, 20, 0.1),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* ==========================================================================
+   5. SIDEBAR TATTICA MATERICA (Ispirata al render con sabbia/argilla calda)
+   ========================================================================== */
+
+.tactile-sidebar {
+  background: linear-gradient(180deg, #eae3d3 0%, #e0d6c2 100%);
+  border-right: 2px solid rgba(45, 35, 20, 0.16);
+  box-shadow: 8px 0 28px -6px rgba(45, 35, 20, 0.15);
+  color: #2e2821;
+}
+
+.tactile-nav-item {
+  border-radius: 1.15rem;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.tactile-nav-active {
+  background: linear-gradient(180deg, #cfc4ae 0%, #c4b8a1 100%);
+  border: 1px solid rgba(45, 35, 20, 0.2);
+  border-top-color: rgba(30, 20, 10, 0.35);
+  box-shadow:
+    inset 0 2.5px 5px 0 rgba(30, 20, 10, 0.22),
+    inset 0 1px 2px 0 rgba(30, 20, 10, 0.15),
+    0 1px 0 0 rgba(255, 255, 255, 0.95);
+  color: #064e3b;
+}
+
+.tactile-nav-inactive:hover {
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 2px 6px -1px rgba(45, 35, 20, 0.1),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+  color: #1a1612;
+}

@@ -263,7 +263,9 @@ export function ensureSeeded(): Promise<void> {
           await seedDatabase();
         }
       } catch (err) {
+        seeding = null;
         console.error("ensureSeeded initialization error:", err);
+        throw err;
       }
     })();
   }
