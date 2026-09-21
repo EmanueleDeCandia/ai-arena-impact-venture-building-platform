@@ -587,7 +587,9 @@ export async function seedDatabase() {
 
 // Esecuzione diretta: npx tsx src/db/seed.ts
 const isMain =
-  process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, "/")}`;
+  process.argv[1] &&
+  (process.argv[1].includes("seed") ||
+    import.meta.url.includes("seed.ts"));
 if (isMain) {
   seedDatabase()
     .then(() => process.exit(0))

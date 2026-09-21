@@ -1,6 +1,6 @@
 "use server";
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import * as s from "@/db/schema";
@@ -578,6 +578,34 @@ export async function signDocument(documentId: number, actorId: number) {
   return { ok: true };
 }
 
+export async function generateAndSignTermSheet(projectId: number, actorId: number) {
+  const p = await db.select().from(s.projects).where(eq(s.projects.id, projectId)).limit(1);
+  const title = p[0] ? `Term Sheet Blended Finance — ${p[0].name}` : `Term Sheet Blended Finance`;
+  
+  const existing = await db
+    .select()
+    .from(s.documents)
+    .where(and(eq(s.documents.projectId, projectId), eq(s.documents.category, "TERM_SHEET")))
+    .limit(1);
+
+  if (existing[0]) {
+    await db.update(s.documents).set({ status: "SIGNED" }).where(eq(s.documents.id, existing[0].id));
+    await logAudit(actorId, "FIRMA_DOCUMENTO", "DOCUMENT", existing[0].id, `${existing[0].title} — firmato (1-click)`);
+  } else {
+    await db.insert(s.documents).values({
+      projectId,
+      title,
+      category: "TERM_SHEET",
+      status: "SIGNED",
+      sizeKb: 240,
+      uploadedBy: actorId,
+    });
+    await logAudit(actorId, "CREA_E_FIRMA_TERM_SHEET", "PROJECT", projectId, `${title} generato e firmato digitalmente`);
+  }
+  revalidate(projectId);
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------------------
 // RF-01 Opportunità
 // ---------------------------------------------------------------------------
@@ -719,6 +747,39 @@ export async function applyAgentProposal(
 export async function setDnsh(projectId: number, dnshOk: boolean, actorId: number) {
   await db.update(s.projects).set({ dnshOk, updatedAt: new Date() }).where(eq(s.projects.id, projectId));
   await logAudit(actorId, dnshOk ? "ATTIVA_DNSH" : "DISATTIVA_DNSH", "PROJECT", projectId, "Verifica DNSH aggiornata");
+  revalidate(projectId);
+  return { ok: true };
+}
+
+export async function updateUnderwriting(
+  projectId: number,
+  input: {
+    creditScore: number;
+    impactScore: number;
+    taxonomyAlignmentPct: number;
+    sfdrCategory: string;
+    expectedLossPct?: number;
+  },
+  actorId: number
+) {
+  await db
+    .update(s.projects)
+    .set({
+      creditScore: input.creditScore,
+      impactScore: input.impactScore,
+      taxonomyAlignmentPct: input.taxonomyAlignmentPct,
+      sfdrCategory: input.sfdrCategory,
+      expectedLossPct: input.expectedLossPct !== undefined ? input.expectedLossPct : 0,
+      updatedAt: new Date(),
+    })
+    .where(eq(s.projects.id, projectId));
+  await logAudit(
+    actorId,
+    "AGGIORNA_UNDERWRITING",
+    "PROJECT",
+    projectId,
+    `Underwriting aggiornato: Credit ${input.creditScore}, Impact ${input.impactScore}, Tassonomia ${input.taxonomyAlignmentPct}%, SFDR ${input.sfdrCategory}`
+  );
   revalidate(projectId);
   return { ok: true };
 }

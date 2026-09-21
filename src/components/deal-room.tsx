@@ -27,7 +27,7 @@ export function DealRoom({ project }: { project: ProjectDTO }) {
   return (
     <div className="space-y-5">
       <Card className={cn("p-4", termSheetSigned ? "border-emerald-200 bg-emerald-50/40" : "border-amber-200 bg-amber-50/40")}>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-bold text-slate-800">
               {termSheetSigned ? "✓ Term Sheet firmato da tutti gli stakeholder" : "⏳ Term Sheet non ancora firmato"}
@@ -36,7 +36,32 @@ export function DealRoom({ project }: { project: ProjectDTO }) {
               La firma del Term Sheet è vincolante per la transizione Underwriting → Funding (RF-05 · criteri di accettazione).
             </p>
           </div>
-          <ShieldCheck className={cn("h-6 w-6", termSheetSigned ? "text-emerald-500" : "text-amber-400")} />
+          <div className="flex items-center gap-2">
+            {!termSheetSigned && canEdit && (
+              <button
+                type="button"
+                className={btnPrimary}
+                onClick={async () => {
+                  const existingTs = project.documents.find((d) => d.category === "TERM_SHEET");
+                  if (existingTs) {
+                    await signDocument(existingTs.id, user.id);
+                  } else {
+                    await addDocument(
+                      project.id,
+                      { title: `Term Sheet Blended Finance — ${project.name}`, category: "TERM_SHEET", sizeKb: 240 },
+                      user.id
+                    );
+                  }
+                }}
+              >
+                <FileSignature className="h-4 w-4" />
+                {project.documents.some((d) => d.category === "TERM_SHEET")
+                  ? "Firma Term Sheet Ora"
+                  : "Genera Term Sheet Predefinito"}
+              </button>
+            )}
+            <ShieldCheck className={cn("h-6 w-6", termSheetSigned ? "text-emerald-500" : "text-amber-400")} />
+          </div>
         </div>
       </Card>
 

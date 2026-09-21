@@ -15,7 +15,13 @@ import type { ProjectDTO } from "@/lib/types";
 import { NEXT_STATUS, STATUS_LABEL, WORKFLOW, transitionChecks, workflowOrder } from "@/lib/workflow";
 import { cn } from "@/lib/format";
 import { Badge, btnPrimary, btnSecondary, CheckItem, Modal } from "@/components/ui";
-import { advanceProject, validateToc } from "@/actions";
+import {
+  advanceProject,
+  generateAndSignTermSheet,
+  setDnsh,
+  updateUnderwriting,
+  validateToc,
+} from "@/actions";
 import { useRole } from "@/components/role-provider";
 import { hasPerm } from "@/lib/permissions";
 
@@ -195,16 +201,59 @@ export function WorkflowStepper({ project }: { project: ProjectDTO }) {
                     </div>
                   </div>
 
-                  {/* 1-Click Action Shortcut if not passed */}
+                  {/* 1-Click Action Shortcuts if not passed */}
                   {!c.passed && c.label.includes("Teoria del Cambiamento") && (
                     <button
                       type="button"
                       onClick={async () => {
                         await validateToc(project.id, true, user.id);
                       }}
-                      className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-emerald-700 shrink-0"
+                      className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 shrink-0"
                     >
                       ⚡ Valida ToC Ora
+                    </button>
+                  )}
+                  {!c.passed && c.label.includes("DNSH") && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await setDnsh(project.id, true, user.id);
+                      }}
+                      className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 shrink-0"
+                    >
+                      ⚡ Valida DNSH Ora
+                    </button>
+                  )}
+                  {!c.passed && c.label.includes("Term Sheet") && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await generateAndSignTermSheet(project.id, user.id);
+                      }}
+                      className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 shrink-0"
+                    >
+                      ⚡ Firma Term Sheet Ora
+                    </button>
+                  )}
+                  {!c.passed && c.label.includes("Score integrato Underwriting") && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await updateUnderwriting(
+                          project.id,
+                          {
+                            creditScore: 82,
+                            impactScore: 85,
+                            taxonomyAlignmentPct: 80,
+                            sfdrCategory: "ARTICLE_9",
+                            expectedLossPct: 1.2,
+                          },
+                          user.id
+                        );
+                      }}
+                      className="rounded bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 shrink-0"
+                    >
+                      ⚡ Auto-Score (84/100)
                     </button>
                   )}
                 </div>

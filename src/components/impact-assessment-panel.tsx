@@ -204,17 +204,15 @@ export function ImpactAssessmentPanel() {
   // Delete current assessment
   const handleDeleteAssessment = (id: string) => {
     if (assessments.length <= 1) {
-      alert("È necessario mantenere almeno un assessment attivo nel sistema.");
+      triggerNotification("È necessario mantenere almeno un assessment attivo nel sistema.");
       return;
     }
     const target = assessments.find((a) => a.id === id);
-    if (confirm(`Sei sicuro di voler eliminare l'assessment "${target?.assessmentTitle}"?`)) {
-      const nextList = assessments.filter((a) => a.id !== id);
-      saveToStorage(nextList);
-      setActiveAssessmentId(nextList[0].id);
-      setActiveImpactIndex(0);
-      triggerNotification("Assessment eliminato dal sistema.");
-    }
+    const nextList = assessments.filter((a) => a.id !== id);
+    saveToStorage(nextList);
+    setActiveAssessmentId(nextList[0].id);
+    setActiveImpactIndex(0);
+    triggerNotification(`Assessment "${target?.assessmentTitle || "selezionato"}" eliminato dal sistema.`);
   };
 
   // Update current assessment's impacts
@@ -269,18 +267,17 @@ export function ImpactAssessmentPanel() {
     triggerNotification(`Impatto ${nextNumber} aggiunto con successo!`);
   };
 
-  // Remove impact from current assessment
+  // Remove impact from current assessment - immediate reliable execution
   const handleRemoveImpact = (index: number) => {
     if (impacts.length <= 1) {
-      alert("È necessario mantenere almeno un impatto per la qualificazione.");
+      triggerNotification("È necessario mantenere almeno un impatto per la qualificazione.");
       return;
     }
-    if (confirm(`Sei sicuro di voler eliminare "${impacts[index].title}"?`)) {
-      const nextImpacts = impacts.filter((_, i) => i !== index);
-      updateCurrentImpacts(nextImpacts);
-      setActiveImpactIndex(Math.max(0, index - 1));
-      triggerNotification("Impatto rimosso.");
-    }
+    const targetTitle = impacts[index]?.title || `Impatto ${index + 1}`;
+    const nextImpacts = impacts.filter((_, i) => i !== index);
+    updateCurrentImpacts(nextImpacts);
+    setActiveImpactIndex((prev) => Math.max(0, Math.min(prev, nextImpacts.length - 1)));
+    triggerNotification(`"${targetTitle}" eliminato.`);
   };
 
   // MULTI-ROW ADDITION: Add extra row to a specific category
@@ -298,7 +295,7 @@ export function ImpactAssessmentPanel() {
   const handleRemoveRowByRowId = (rowId: string, categoryId: number) => {
     const categoryRows = currentImpact.rows.filter((r) => r.categoryId === categoryId);
     if (categoryRows.length <= 1) {
-      alert("È necessario mantenere almeno una riga di dati per questa categoria.");
+      triggerNotification("È necessario mantenere almeno una riga di dati per questa categoria.");
       return;
     }
     const nextImpacts = [...impacts];
@@ -306,7 +303,7 @@ export function ImpactAssessmentPanel() {
     imp.rows = imp.rows.filter((r) => r.rowId !== rowId);
     nextImpacts[activeImpactIndex] = imp;
     updateCurrentImpacts(nextImpacts);
-    triggerNotification("Riga rimossa.");
+    triggerNotification("Riga rimossa con successo.");
   };
 
   // MULTI-ROW UPDATE: Update a specific row by its rowId
@@ -331,11 +328,115 @@ export function ImpactAssessmentPanel() {
 
   // Reset to initial default assessments
   const handleResetAllDefaults = () => {
-    if (confirm("Vuoi ripristinare tutti gli Assessment predefiniti originali?")) {
-      saveToStorage(INITIAL_DEFAULT_ASSESSMENTS);
-      setActiveAssessmentId(INITIAL_DEFAULT_ASSESSMENTS[0].id);
-      setActiveImpactIndex(0);
-      triggerNotification("Assessment di default ripristinati.");
+    saveToStorage(INITIAL_DEFAULT_ASSESSMENTS);
+    setActiveAssessmentId(INITIAL_DEFAULT_ASSESSMENTS[0].id);
+    setActiveImpactIndex(0);
+    triggerNotification("Assessment di default ripristinati con successo.");
+  };
+
+  // Calcolo dinamico della copertura formale delle 5 dimensioni IMP per l'impatto corrente
+  const isRowFilled = (r: ImpactRowData) => {
+    const hasData = Boolean(r.data && r.data.trim() !== "" && r.data.trim() !== "—");
+    const hasIndicator = Boolean(r.indicator && r.indicator.trim() !== "");
+    const hasAssessment = Boolean(r.assessment && r.assessment.trim() !== "");
+    return hasData || (hasIndicator && hasAssessment);
+  };
+
+  const currentRows = currentImpact?.rows || [];
+  const dimensionCoverage = {
+    WHAT: currentRows.filter((r) => r.categoryId >= 1 && r.categoryId <= 4).some(isRowFilled),
+    WHO: currentRows.filter((r) => r.categoryId >= 5 && r.categoryId <= 8).some(isRowFilled),
+    HOW_MUCH: currentRows.filter((r) => r.categoryId >= 9 && r.categoryId <= 11).some(isRowFilled),
+    CONTRIBUTION: currentRows.filter((r) => r.categoryId >= 12 && r.categoryId <= 13).some(isRowFilled),
+    RISK: currentRows.filter((r) => r.categoryId >= 14 && r.categoryId <= 15).some(isRowFilled),
+  };
+
+  const coveredDimensionsCount = Object.values(dimensionCoverage).filter(Boolean).length;
+
+  const getSupporterEligibility = (count: number) => {
+    switch (count) {
+      case 5:
+        return {
+          count: 5,
+          label: "Completo (5/5 Dimensioni coperte)",
+          verdict: "IDONEO / BANCABILE",
+          verdictSub: "5/5 Dimensioni conformi allo standard IMP",
+          color: "text-emerald-400",
+          border: "border-emerald-300",
+          bg: "bg-emerald-50",
+          badgeCls: "bg-emerald-100 text-emerald-800 border-emerald-300",
+          statusColor: "text-emerald-700",
+        };
+      case 4:
+        return {
+          count: 4,
+          label: "Da Completare (4/5 Dimensioni coperte)",
+          verdict: "PRE-IDONEO / DA COMPLETARE",
+          verdictSub: "4/5 Dimensioni coperte (manca 1 dimensione)",
+          color: "text-amber-400",
+          border: "border-amber-300",
+          bg: "bg-amber-50",
+          badgeCls: "bg-amber-100 text-amber-800 border-amber-300",
+          statusColor: "text-amber-700",
+        };
+      case 3:
+        return {
+          count: 3,
+          label: "Incompleto (3/5 Dimensioni coperte)",
+          verdict: "INCOMPLETO",
+          verdictSub: "3/5 Dimensioni coperte (integrazione richiesta)",
+          color: "text-amber-400",
+          border: "border-amber-300",
+          bg: "bg-amber-50",
+          badgeCls: "bg-amber-100 text-amber-800 border-amber-300",
+          statusColor: "text-amber-700",
+        };
+      case 2:
+        return {
+          count: 2,
+          label: "Non Idoneo (2/5 Dimensioni coperte)",
+          verdict: "NON IDONEO",
+          verdictSub: "2/5 Dimensioni coperte (dati insufficienti)",
+          color: "text-orange-400",
+          border: "border-orange-300",
+          bg: "bg-orange-50",
+          badgeCls: "bg-orange-100 text-orange-800 border-orange-300",
+          statusColor: "text-orange-700",
+        };
+      case 1:
+        return {
+          count: 1,
+          label: "Non valutabile (1/5 Dimensioni coperte)",
+          verdict: "NON VALUTABILE",
+          verdictSub: "1/5 Dimensioni coperte (mancano evidenze minime)",
+          color: "text-rose-400",
+          border: "border-rose-300",
+          bg: "bg-rose-50",
+          badgeCls: "bg-rose-100 text-rose-800 border-rose-300",
+          statusColor: "text-rose-700",
+        };
+      case 0:
+      default:
+        return {
+          count: 0,
+          label: "Inidoneo (0/5 Dimensioni coperte)",
+          verdict: "INIDONEO",
+          verdictSub: "0/5 Dimensioni coperte (modulo non compilato)",
+          color: "text-rose-400",
+          border: "border-rose-300",
+          bg: "bg-rose-50",
+          badgeCls: "bg-rose-100 text-rose-800 border-rose-300",
+          statusColor: "text-rose-700",
+        };
+    }
+  };
+
+  const supporterEligibility = getSupporterEligibility(coveredDimensionsCount);
+
+  const handleSelectTab = (tab: "ASSESSMENT" | "GUIDA" | "REPORT_SOSTENITORI") => {
+    setActiveTab(tab);
+    if (tab === "REPORT_SOSTENITORI") {
+      triggerNotification(`Report Sostenitori: ${supporterEligibility.label}`);
     }
   };
 
@@ -429,6 +530,20 @@ export function ImpactAssessmentPanel() {
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
+              onClick={() => {
+                saveToStorage(assessments);
+                triggerNotification("✓ Dati salvati in locale nel Browser!");
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600/40 bg-emerald-950/50 px-3.5 py-2 text-xs font-bold text-emerald-300 shadow-sm transition hover:bg-emerald-900/60 hover:text-white"
+              title="Salva immediatamente lo stato in localStorage"
+            >
+              <Save className="h-3.5 w-3.5 text-emerald-400" />
+              Salva nel Browser
+            </button>
+
+            <button
+              type="button"
               onClick={handleOpenCloneModal}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-3.5 py-2 text-xs font-bold text-slate-950 shadow-md shadow-emerald-900/30 transition hover:from-emerald-400 hover:to-teal-400"
             >
@@ -437,6 +552,7 @@ export function ImpactAssessmentPanel() {
             </button>
 
             <button
+              type="button"
               onClick={() => setShowProfileModal(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white"
             >
@@ -446,6 +562,7 @@ export function ImpactAssessmentPanel() {
 
             {assessments.length > 1 && (
               <button
+                type="button"
                 onClick={() => handleDeleteAssessment(activeAssessmentId)}
                 title="Elimina questo assessment"
                 className="inline-flex items-center gap-1 rounded-xl border border-rose-900/40 bg-rose-950/40 p-2 text-xs text-rose-400 hover:bg-rose-900/60 hover:text-rose-200"
@@ -455,6 +572,7 @@ export function ImpactAssessmentPanel() {
             )}
 
             <button
+              type="button"
               onClick={handleResetAllDefaults}
               title="Ripristina assessment predefiniti"
               className="inline-flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-800/50 p-2 text-xs text-slate-400 hover:bg-slate-700 hover:text-white"
@@ -550,9 +668,15 @@ export function ImpactAssessmentPanel() {
 
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
             <div className="text-[11px] font-medium text-slate-400">Idoneità per Sostenitori</div>
-            <div className="mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              Alta (5/5 Dimensioni coperte)
+            <div className={cn("mt-1 flex items-center gap-1.5 text-xs font-bold", supporterEligibility.color)}>
+              {coveredDimensionsCount === 5 ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+              ) : coveredDimensionsCount >= 3 ? (
+                <Info className="h-4 w-4 shrink-0 text-amber-400" />
+              ) : (
+                <ShieldAlert className="h-4 w-4 shrink-0 text-rose-400" />
+              )}
+              {supporterEligibility.label}
             </div>
           </div>
         </div>
@@ -562,7 +686,8 @@ export function ImpactAssessmentPanel() {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-2">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setActiveTab("ASSESSMENT")}
+            type="button"
+            onClick={() => handleSelectTab("ASSESSMENT")}
             className={cn(
               "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition",
               activeTab === "ASSESSMENT"
@@ -575,7 +700,8 @@ export function ImpactAssessmentPanel() {
           </button>
 
           <button
-            onClick={() => setActiveTab("GUIDA")}
+            type="button"
+            onClick={() => handleSelectTab("GUIDA")}
             className={cn(
               "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition",
               activeTab === "GUIDA"
@@ -588,7 +714,8 @@ export function ImpactAssessmentPanel() {
           </button>
 
           <button
-            onClick={() => setActiveTab("REPORT_SOSTENITORI")}
+            type="button"
+            onClick={() => handleSelectTab("REPORT_SOSTENITORI")}
             className={cn(
               "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition",
               activeTab === "REPORT_SOSTENITORI"
@@ -621,28 +748,57 @@ export function ImpactAssessmentPanel() {
                 {impacts.map((imp, idx) => {
                   const isActive = idx === activeImpactIndex;
                   return (
-                    <button
+                    <div
                       key={imp.id}
-                      onClick={() => setActiveImpactIndex(idx)}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition",
+                        "group inline-flex items-center gap-1.5 rounded-lg pl-3 pr-2 py-1.5 text-xs font-bold transition shadow-xs",
                         isActive
                           ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20"
                           : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
                       )}
                     >
-                      <Target className="h-3.5 w-3.5" />
-                      <span>Impatto {idx + 1}</span>
-                      <span className={cn("rounded px-1.5 py-0.2 text-[10px]", isActive ? "bg-emerald-700 text-white" : "bg-slate-100 text-slate-600")}>
-                        {CLASSIFICATION_INFO[imp.classification].code}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveImpactIndex(idx)}
+                        className="inline-flex items-center gap-1.5"
+                      >
+                        <Target className="h-3.5 w-3.5" />
+                        <span>Impatto {idx + 1}</span>
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.2 text-[10px]",
+                            isActive ? "bg-emerald-700 text-white" : "bg-slate-100 text-slate-600"
+                          )}
+                        >
+                          {CLASSIFICATION_INFO[imp.classification].code}
+                        </span>
+                      </button>
+                      {impacts.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveImpact(idx);
+                          }}
+                          title={`Elimina Impatto ${idx + 1}`}
+                          className={cn(
+                            "rounded p-0.5 transition cursor-pointer ml-1",
+                            isActive
+                              ? "text-emerald-100 hover:bg-emerald-700 hover:text-white"
+                              : "text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                          )}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
 
                 <button
+                  type="button"
                   onClick={handleAddImpact}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-emerald-600 bg-emerald-50/80 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-emerald-600 bg-emerald-50/80 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Aggiungi Nuovo Impatto
@@ -651,8 +807,9 @@ export function ImpactAssessmentPanel() {
 
               {impacts.length > 1 && (
                 <button
+                  type="button"
                   onClick={() => handleRemoveImpact(activeImpactIndex)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 shadow-xs hover:bg-rose-100 transition cursor-pointer"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Elimina Impatto {activeImpactIndex + 1}
@@ -1354,12 +1511,38 @@ export function ImpactAssessmentPanel() {
                 <div className="text-[11px] text-slate-500">{profile.sector}</div>
               </div>
 
-              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <span className="text-[10px] font-bold uppercase text-slate-400">Giudizio Istruttorio</span>
-                <div className="mt-1 font-bold text-emerald-600">IDONEO / BANCABILE</div>
-                <div className="text-[11px] text-slate-500">5/5 Dimensioni conformi</div>
+              <div className={cn("rounded-lg p-3 border", supporterEligibility.border, supporterEligibility.bg)}>
+                <span className="text-[10px] font-bold uppercase text-slate-500">Giudizio Istruttorio</span>
+                <div className={cn("mt-1 font-bold text-sm", supporterEligibility.statusColor)}>
+                  {supporterEligibility.verdict}
+                </div>
+                <div className="text-[11px] font-medium text-slate-600">{supporterEligibility.label}</div>
               </div>
             </div>
+
+            {/* Coverage Status Bar if incomplete */}
+            {coveredDimensionsCount < 5 && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-900">
+                <div className="flex items-center gap-2 font-bold">
+                  <Info className="h-4 w-4 shrink-0 text-amber-600" />
+                  <span>Attenzione all'istruttoria: {supporterEligibility.label}</span>
+                </div>
+                <p className="mt-1 text-[11px] text-amber-800">
+                  Per raggiungere la massima classe di bancabilità (Completo 5/5), completa i dati per le dimensioni non ancora compilate:{" "}
+                  <strong>
+                    {[
+                      !dimensionCoverage.WHAT && "1. WHAT",
+                      !dimensionCoverage.WHO && "2. WHO",
+                      !dimensionCoverage.HOW_MUCH && "3. HOW MUCH",
+                      !dimensionCoverage.CONTRIBUTION && "4. CONTRIBUTION",
+                      !dimensionCoverage.RISK && "5. RISK",
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </strong>.
+                </p>
+              </div>
+            )}
           </Card>
 
           {/* Breakdown per Impact Table with all rows */}

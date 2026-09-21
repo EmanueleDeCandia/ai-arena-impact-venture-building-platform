@@ -90,7 +90,7 @@ export function transitionChecks(p: ProjectDTO): Check[] {
         {
           label: "Leva finanziaria ≥ 2x (ogni € grant genera ≥ 2€)",
           passed: f.leverage >= 2,
-          hint: `Leva attuale ${f.leverage.toFixed(1)}x`,
+          hint: f.grant === 0 ? "Richiesta almeno 1 tranche Grant (fondo perduto) per calcolare la leva blended" : `Leva attuale ${f.leverage.toFixed(1)}x (soglia ≥ 2.0x)`,
         },
       ];
     case "UNDERWRITING":

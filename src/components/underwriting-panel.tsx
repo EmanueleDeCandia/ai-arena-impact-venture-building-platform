@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, ShieldCheck, ShieldX } from "lucide-react";
+import { Bot, Pencil, Save, ShieldCheck, ShieldX } from "lucide-react";
 import type { ProjectDTO } from "@/lib/types";
 import { computeFinance, underwritingFinalScore } from "@/lib/finance";
 import { underwriterAgent } from "@/lib/agents";
-import { applyAgentProposal, runAgent, setDnsh } from "@/actions";
+import { applyAgentProposal, runAgent, setDnsh, updateUnderwriting } from "@/actions";
 import type { AgentResult } from "@/lib/agents";
 import { useRole } from "@/components/role-provider";
 import { hasPerm } from "@/lib/permissions";
 import { cn, fmtPct } from "@/lib/format";
-import { Badge, btnPrimary, Card, ProgressBar, ScoreRing, SectionTitle } from "@/components/ui";
+import { Badge, btnPrimary, btnSecondary, Card, Field, inputCls, Modal, ProgressBar, ScoreRing, SectionTitle } from "@/components/ui";
 
 export function UnderwritingPanel({ project }: { project: ProjectDTO }) {
   const { user } = useRole();
@@ -18,6 +18,15 @@ export function UnderwritingPanel({ project }: { project: ProjectDTO }) {
   const canView = hasPerm(user.role, "underwriting.view") || hasPerm(user.role, "underwriting.edit");
   const [result, setResult] = useState<AgentResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    creditScore: project.creditScore,
+    impactScore: project.impactScore,
+    taxonomyAlignmentPct: project.taxonomyAlignmentPct,
+    sfdrCategory: project.sfdrCategory,
+    expectedLossPct: project.expectedLossPct,
+  });
 
   const final = underwritingFinalScore(project.creditScore, project.impactScore);
   const f = computeFinance(project.tranches, project);
@@ -40,6 +49,32 @@ export function UnderwritingPanel({ project }: { project: ProjectDTO }) {
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold text-slate-900">Istruttoria Creditizia &amp; d'Impatto (RF-05)</h2>
+          <p className="text-xs text-slate-500">
+            Valutazione del merito creditizio, tassonomia europea, sfdr e presidi di mitigazione rischio
+          </p>
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditForm({
+                creditScore: project.creditScore,
+                impactScore: project.impactScore,
+                taxonomyAlignmentPct: project.taxonomyAlignmentPct,
+                sfdrCategory: project.sfdrCategory,
+                expectedLossPct: project.expectedLossPct,
+              });
+              setShowEditModal(true);
+            }}
+            className={cn(btnSecondary, "text-xs")}
+          >
+            <Pencil className="h-3.5 w-3.5" /> Modifica Parametri Istruttori
+          </button>
+        )}
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="flex flex-col items-center p-5">
           <ScoreRing value={project.creditScore} label="Score creditizio" sub="bilanci ETS / impresa" />
@@ -165,6 +200,105 @@ export function UnderwritingPanel({ project }: { project: ProjectDTO }) {
             ))}
           </div>
         </Card>
+      )}
+
+      {/* Modal di Modifica Parametri Istruttori Underwriting */}
+      {showEditModal && (
+        <Modal title="Modifica Parametri Underwriting & ESG" onClose={() => setShowEditModal(false)}>
+          <div className="space-y-3 text-xs">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Score Creditizio (0-100)">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={editForm.creditScore}
+                  onChange={(e) => setEditForm({ ...editForm, creditScore: Number(e.target.value) })}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Score Impatto (0-100)">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={editForm.impactScore}
+                  onChange={(e) => setEditForm({ ...editForm, impactScore: Number(e.target.value) })}
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Allineamento EU Taxonomy (%)">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={editForm.taxonomyAlignmentPct}
+                  onChange={(e) => setEditForm({ ...editForm, taxonomyAlignmentPct: Number(e.target.value) })}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Classificazione SFDR">
+                <select
+                  value={editForm.sfdrCategory}
+                  onChange={(e) => setEditForm({ ...editForm, sfdrCategory: e.target.value })}
+                  className={inputCls}
+                >
+                  <option value="Article 6">Article 6 (Standard ESG)</option>
+                  <option value="Article 8">Article 8 (Promozione ESG)</option>
+                  <option value="Article 9">Article 9 (Obiettivo d'Impatto Sostenibile)</option>
+                </select>
+              </Field>
+            </div>
+
+            <Field label="Expected Loss stimata (%)">
+              <input
+                type="number"
+                step="0.1"
+                min={0}
+                max={100}
+                value={editForm.expectedLossPct}
+                onChange={(e) => setEditForm({ ...editForm, expectedLossPct: Number(e.target.value) })}
+                className={inputCls}
+              />
+            </Field>
+
+            <div className="rounded-lg bg-slate-50 p-2.5 text-[11px] text-slate-600 border border-slate-200">
+              <span className="font-bold">Score Integrato Risultante: </span>
+              <b>{underwritingFinalScore(editForm.creditScore, editForm.impactScore).toFixed(0)} / 100</b>{" "}
+              {underwritingFinalScore(editForm.creditScore, editForm.impactScore) >= 60 ? (
+                <span className="text-emerald-600 font-bold">(✓ Sopra soglia bancabilità 60)</span>
+              ) : (
+                <span className="text-rose-600 font-bold">(✕ Sotto soglia bancabilità 60)</span>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                onClick={() => setShowEditModal(false)}
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                className={btnPrimary}
+                onClick={async () => {
+                  setSaving(true);
+                  await updateUnderwriting(project.id, editForm, user.id);
+                  setSaving(false);
+                  setShowEditModal(false);
+                }}
+              >
+                <Save className="h-3.5 w-3.5" /> {saving ? "Salvataggio…" : "Salva Parametri"}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
